@@ -11,6 +11,11 @@ const schema = defineSchema({
     image: v.optional(v.string()),
     isAnonymous: v.optional(v.boolean()),
   }).index("email", ["email"]),
+  todos: defineTable({
+    userId: v.id("users"),
+    text: v.string(),
+    completed: v.boolean(),
+  }).index("by_user", ["userId"]),
 });
 
 export default schema;

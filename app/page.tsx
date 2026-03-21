@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 import { SignOutButton } from "@/components/SignOutButton";
+import { TodoList } from "@/components/TodoList";
 
 export default function HomePage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -34,21 +35,13 @@ export default function HomePage() {
         <SignOutButton />
       </header>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
-        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center max-w-md w-full">
-          <div className="text-5xl mb-4">🎮</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome to LifeLup
-          </h2>
-          {me && (
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Signed in as <span className="font-medium">{me.email}</span>
-            </p>
-          )}
-          <p className="text-gray-500 dark:text-gray-500 text-sm">
-            Your gamified family task manager. More features coming soon.
+      <div className="flex flex-1 flex-col items-center gap-6 p-8 pt-10">
+        {me && (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            👋 {me.email}
           </p>
-        </div>
+        )}
+        <TodoList />
       </div>
     </main>
   );
