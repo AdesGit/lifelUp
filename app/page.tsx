@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 import { SignOutButton } from "@/components/SignOutButton";
 import { TodoList } from "@/components/TodoList";
+import Link from "next/link";
 
 export default function HomePage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -29,9 +30,16 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          LifeLup
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">LifeLup</h1>
+          <nav className="flex gap-2 text-sm">
+            <span className="text-blue-600 dark:text-blue-400 font-medium">My todos</span>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Family
+            </Link>
+          </nav>
+        </div>
         <SignOutButton />
       </header>
 

@@ -14,6 +14,21 @@ export const list = query({
   },
 });
 
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const todos = await ctx.db.query("todos").collect();
+    const users = await ctx.db.query("users").collect();
+    const userMap = Object.fromEntries(users.map((u) => [u._id, u]));
+    return todos.map((todo) => ({
+      ...todo,
+      user: userMap[todo.userId] ?? null,
+    }));
+  },
+});
+
 export const create = mutation({
   args: { text: v.string() },
   handler: async (ctx, { text }) => {
