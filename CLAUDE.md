@@ -2,59 +2,84 @@
 
 ## Stack
 - **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS
-- **Backend**: Convex (self-hosted at `https://convex.aidigitalassistant.cloud`)
-- **Auth**: `@convex-dev/auth` with Password provider
-- **Deployment**: Hostinger VPS (Ubuntu 24.04), PM2, Nginx
+- **Backend**: Convex self-hosted (`@convex-dev/auth`, Password provider)
+- **Deployment**: Hostinger VPS (Ubuntu 24.04), PM2, Nginx, Docker
 
 ## Key URLs
-- App: `https://lifelup.aidigitalassistant.cloud` (port 3000)
-- Convex: `https://convex.aidigitalassistant.cloud` (port 3210 internal)
+- App: `https://lifelup.aidigitalassistant.cloud` (port 3000, PM2)
+- Convex: `https://convex.aidigitalassistant.cloud` (port 3210, Docker)
 
 ## Project Structure
 ```
-app/                    # Next.js App Router pages
-  layout.tsx            # Root layout with ConvexAuthProvider
-  page.tsx              # Protected home (redirects if not auth'd)
-  signin/page.tsx       # Sign in / sign up page
-components/             # Shared React components
-  ConvexClientProvider.tsx  # Convex + Auth provider wrapper
-  SignInForm.tsx         # Email/password auth form
-  SignOutButton.tsx       # Sign out button
-convex/                 # Convex backend functions
-  schema.ts             # DB schema (authTables + app tables)
-  auth.ts               # Auth setup (Password provider)
-  auth.config.ts        # Auth domain config
-  http.ts               # HTTP router (auth routes)
-  users.ts              # User queries/mutations
-.claude/
-  commands/             # Slash commands (prime, plan, execute, handoff, commit)
-  rules/                # Auto-loaded per file path
-  docs/                 # Heavy reference for sub-agents
+app/
+  layout.tsx            # Root layout — wraps with ConvexClientProvider
+  page.tsx              # Protected home — todo list
+  signin/page.tsx       # Sign in / sign up
+components/
+  ConvexClientProvider.tsx  # ConvexAuthProvider + AuthErrorBoundary
+  SignInForm.tsx         # Email/password form (signIn/signUp toggle)
+  SignOutButton.tsx      # Signs out + redirects to /signin
+  TodoList.tsx           # Per-user real-time todo list
+convex/
+  schema.ts             # authTables + users + todos
+  auth.ts               # Password provider
+  auth.config.ts        # Auth domain (CONVEX_SITE_URL || hardcoded fallback)
+  http.ts               # auth.addHttpRoutes(http)
+  users.ts              # getMe query
+  todos.ts              # list, create, toggle, remove
+  admin.ts              # deleteAllUsers (dev/debug only)
+.github/workflows/
+  deploy.yml            # Auto-deploy on push to main via SSH
+ecosystem.config.js     # PM2 config (port 3000)
+scripts/setup-vps.sh    # One-time VPS provisioning script
 ```
 
 ## Essential Commands
 ```bash
 # Dev
-npm run dev                          # Next.js dev server (port 3000)
+npm run dev
 
-# Convex (self-hosted)
-CONVEX_SELF_HOSTED_URL=http://localhost:3210 \
+# Deploy Convex (from VPS or with external URL)
+CONVEX_SELF_HOSTED_URL=https://convex.aidigitalassistant.cloud \
 CONVEX_SELF_HOSTED_ADMIN_KEY="convex-self-hosted|01c9f268..." \
-npx convex deploy                    # Deploy convex functions
+npx convex deploy
 
-# Deploy
-pm2 restart lifelup                  # Restart production app
+# Production deploy (VPS)
+cd /var/www/lifelup && git pull origin main && npm ci --production=false && npm run build && pm2 restart lifelup
+
+# Restart Convex Docker
+cd /opt/convex && sudo docker compose down && sudo docker compose up -d
 ```
 
 ## Environment Variables
+
+### Next.js app (`/var/www/lifelup/.env.production`)
 ```
-CONVEX_DEPLOYMENT=                   # Set by convex CLI
 NEXT_PUBLIC_CONVEX_URL=https://convex.aidigitalassistant.cloud
 ```
 
+### Convex Docker (`/opt/convex/.env`)
+```
+INSTANCE_NAME=convex-self-hosted
+INSTANCE_SECRET=<secret>
+RUST_LOG=info
+CONVEX_CLOUD_ORIGIN=https://convex.aidigitalassistant.cloud
+CONVEX_SITE_ORIGIN=https://convex.aidigitalassistant.cloud
+```
+⚠️ `CONVEX_CLOUD_ORIGIN` and `CONVEX_SITE_ORIGIN` are critical — they set the JWT issuer.
+Both must equal the Convex public URL. Without them, `iss: ""` in JWTs → auth fails.
+
+### Convex runtime env (set via `npx convex env set`)
+```
+JWT_PRIVATE_KEY=<rsa-private-key-single-line>
+JWKS={"keys":[{"use":"sig","alg":"RS256",...}]}
+SITE_URL=https://lifelup.aidigitalassistant.cloud
+```
+
 ## Conventions
-- All Convex queries/mutations are in `convex/` as `.ts` files
-- Never import Convex server utilities in client components
-- Auth state via `useConvexAuth()` or `useAuthActions()` from `@convex-dev/auth/react`
-- Protected pages: use `useConvexAuth()` and redirect if `!isAuthenticated`
-- Keep rule files in `.claude/rules/` scoped to paths — not in CLAUDE.md
+- All Convex queries/mutations in `convex/` — never import server utils in client components
+- Auth state: `useConvexAuth()` or `useAuthActions()` from `@convex-dev/auth/react`
+- Protected pages: check `isAuthenticated`, redirect to `/signin` via `useEffect`
+- `AuthErrorBoundary` in `ConvexClientProvider` clears stale tokens automatically
+- Tailwind only — no inline styles
+- Keep CLAUDE.md lean — domain details go in `.claude/rules/`
