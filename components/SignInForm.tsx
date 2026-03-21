@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 export function SignInForm() {
   const { signIn } = useAuthActions();
   const router = useRouter();
-  const [step, setStep] = useState<"signIn" | "signUp">("signIn");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +29,7 @@ export function SignInForm() {
   return (
     <div className="w-full max-w-sm">
       <h1 className="text-2xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-        {step === "signIn" ? "Welcome back" : "Create account"}
+        Welcome back
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +67,7 @@ export function SignInForm() {
           />
         </div>
 
-        <input name="flow" type="hidden" value={step} />
+        <input name="flow" type="hidden" value="signIn" />
 
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -79,23 +78,9 @@ export function SignInForm() {
           disabled={loading}
           className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
-          {loading ? "Please wait…" : step === "signIn" ? "Sign in" : "Sign up"}
+          {loading ? "Please wait…" : "Sign in"}
         </button>
       </form>
-
-      <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-        {step === "signIn" ? "Don't have an account?" : "Already have an account?"}{" "}
-        <button
-          type="button"
-          onClick={() => {
-            setError(null);
-            setStep(step === "signIn" ? "signUp" : "signIn");
-          }}
-          className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-        >
-          {step === "signIn" ? "Sign up" : "Sign in"}
-        </button>
-      </p>
     </div>
   );
 }
