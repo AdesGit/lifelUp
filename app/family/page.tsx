@@ -37,15 +37,17 @@ export default function FamilyPage() {
   }
 
   // Group todos by user
-  const byUser = todos?.reduce<Record<string, { email: string; todos: typeof todos }>>((acc, todo) => {
+  type TodoItem = NonNullable<typeof todos>[number];
+  type UserGroup = { email: string; todos: TodoItem[] };
+  const byUser = todos?.reduce<Record<string, UserGroup>>((acc: Record<string, UserGroup>, todo: TodoItem) => {
     const email = todo.user?.email ?? "Unknown";
     if (!acc[email]) acc[email] = { email, todos: [] };
     acc[email].todos.push(todo);
     return acc;
   }, {}) ?? {};
 
-  const users = Object.values(byUser);
-  const totalDone = todos?.filter((t) => t.completed).length ?? 0;
+  const users = Object.values(byUser) as UserGroup[];
+  const totalDone = todos?.filter((t: TodoItem) => t.completed).length ?? 0;
   const totalAll = todos?.length ?? 0;
 
   return (
@@ -59,6 +61,10 @@ export default function FamilyPage() {
             </Link>
             <span className="text-gray-300 dark:text-gray-600">·</span>
             <span className="text-blue-600 dark:text-blue-400 font-medium">Family</span>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Coach
+            </Link>
           </nav>
         </div>
         <SignOutButton />

@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
-import { Id } from "@/convex/_generated/dataModel";
+import { Doc, Id } from "@/convex/_generated/dataModel";
 
 export function TodoList() {
   const todos = useQuery(api.todos.list);
@@ -20,7 +20,7 @@ export function TodoList() {
     setText("");
   }
 
-  const done = todos?.filter((t) => t.completed).length ?? 0;
+  const done = todos?.filter((t: Doc<"todos">) => t.completed).length ?? 0;
   const total = todos?.length ?? 0;
 
   return (
@@ -61,7 +61,7 @@ export function TodoList() {
       )}
 
       <ul className="space-y-2">
-        {todos?.map((todo) => (
+        {todos?.map((todo: Doc<"todos">) => (
           <li
             key={todo._id}
             className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 group"

@@ -16,6 +16,18 @@ const schema = defineSchema({
     text: v.string(),
     completed: v.boolean(),
   }).index("by_user", ["userId"]),
+  agentSessions: defineTable({
+    userId: v.id("users"),
+    type: v.string(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+  agentMessages: defineTable({
+    sessionId: v.id("agentSessions"),
+    userId: v.id("users"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index("by_session", ["sessionId"]),
 });
 
 export default schema;

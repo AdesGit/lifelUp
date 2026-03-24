@@ -38,6 +38,10 @@ export default function HomePage() {
             <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
               Family
             </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Coach
+            </Link>
           </nav>
         </div>
         <SignOutButton />
