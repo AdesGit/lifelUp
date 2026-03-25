@@ -85,6 +85,10 @@ export function TodoList() {
               {todo.text}
             </span>
 
+            <span className="text-xs text-yellow-500 font-medium">
+              {todo.starValue != null ? `⭐${todo.starValue}` : "·"}
+            </span>
+
             <button
               onClick={() => remove({ id: todo._id as Id<"todos"> })}
               className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"

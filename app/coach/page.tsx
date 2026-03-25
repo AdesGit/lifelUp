@@ -87,6 +87,14 @@ export default function CoachPage() {
             <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
               Context
             </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Recurring
+            </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Quests
+            </Link>
           </nav>
         </div>
         <SignOutButton />

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 export const list = query({
@@ -45,7 +46,20 @@ export const toggle = mutation({
     if (!userId) throw new Error("Not authenticated");
     const todo = await ctx.db.get(id);
     if (!todo || todo.userId !== userId) throw new Error("Not found");
-    await ctx.db.patch(id, { completed: !todo.completed });
+    const nowCompleted = !todo.completed;
+    await ctx.db.patch(id, { completed: nowCompleted });
+
+    if (nowCompleted && todo.starValue) {
+      const user = await ctx.db.get(userId);
+      await ctx.db.patch(userId, { totalStars: (user?.totalStars ?? 0) + todo.starValue });
+    }
+
+    if (nowCompleted && todo.recurrenceId) {
+      await ctx.runMutation(internal.quests.checkQuestCompletion, {
+        recurringTodoId: todo.recurrenceId,
+        userId,
+      });
+    }
   },
 });
 
@@ -58,4 +72,17 @@ export const remove = mutation({
     if (!todo || todo.userId !== userId) throw new Error("Not found");
     await ctx.db.delete(id);
   },
+});
+
+export const getUnevaluatedTodos = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("todos").collect();
+    return all.filter((t) => t.starValue == null);
+  },
+});
+
+export const setTodoStarValue = internalMutation({
+  args: { id: v.id("todos"), starValue: v.number() },
+  handler: async (ctx, { id, starValue }) => ctx.db.patch(id, { starValue }),
 });

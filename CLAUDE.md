@@ -1,98 +1,49 @@
-# LifeLup — Global Rules
+### 🔄 Project Awareness & Context
+- **Always read `PLANNING.md`** at the start of a new conversation to understand the project's architecture, goals, stack, commands, and constraints.
+- **Before starting any new feature**, check `PRPs/` for an existing PRP. If none exists, follow the WISC workflow: fill `INITIAL.md` → run `/generate-prp` → review → run `/execute-prp`.
+- **Use consistent naming conventions, file structure, and architecture patterns** as described in `PLANNING.md` and the `.claude/rules/` files (auto-loaded per file type).
+- **Never assume context** — if a file path, function name, or env var is uncertain, read the file first.
 
-## Stack
-- **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS
-- **Backend**: Convex self-hosted (`@convex-dev/auth`, Password provider)
-- **Deployment**: Hostinger VPS (Ubuntu 24.04), PM2, Nginx, Docker
+### 🧱 Code Structure & Modularity
+- **Never create a file longer than 300 lines.** If a file approaches this limit, split it into focused modules.
+- **Organize Convex code by domain**: one file per feature (`todos.ts`, `goals.ts`, `context.ts`). Public functions at top, internal functions below.
+- **Separate concerns**: pages in `app/`, reusable components in `components/`, Convex functions in `convex/`, agent scripts in `lifelup-agent/`.
+- **When adding a new `convex/` module**, always update `convex/_generated/api.d.ts` manually before running `npm run build`. See `PLANNING.md` for the exact 3-step process.
 
-## Key URLs
-- App: `https://lifelup.aidigitalassistant.cloud` (port 3000, PM2)
-- Convex: `https://convex.aidigitalassistant.cloud` (port 3210, Docker)
+### 🧪 Testing & Reliability
+- **No automated test suite (MVP phase).** Every change must pass this validation sequence before deploying:
+  1. `npm run build` — zero TypeScript errors
+  2. `npm run lint` — zero ESLint warnings
+  3. `npx convex deploy` — schema validates, functions deploy (after any Convex change)
+  4. Manual browser check at `https://lifelup.aidigitalassistant.cloud`
+  5. For agent changes: `pm2 logs lifelup-coach --lines 20 --nostream`
+- **Run the full system health check** in `validation/lifelup_validate.md` after any significant change.
+- **For new HTTP agent endpoints**, always verify: wrong Bearer token → 401, correct token → valid JSON.
 
-## Project Structure
-```
-app/
-  layout.tsx            # Root layout — wraps with ConvexClientProvider
-  page.tsx              # Protected home — per-user todo list
-  family/page.tsx       # Family view — all users' todos
-  coach/page.tsx        # AI coach chat (real-time, polling-based)
-  goals/page.tsx        # AI-extracted medium/long-term goals per user
-  context/page.tsx      # Family knowledge base (fiches mémo)
-  signin/page.tsx       # Sign in only (sign-up disabled)
-components/
-  ConvexClientProvider.tsx  # ConvexAuthProvider + AuthErrorBoundary
-  SignInForm.tsx         # Email/password sign-in form
-  SignOutButton.tsx      # Signs out + redirects to /signin
-  TodoList.tsx           # Per-user real-time todo list
-convex/
-  schema.ts             # All tables: authTables + users + todos + agentSessions + agentMessages + goals + contextEntries
-  auth.ts               # Password provider
-  auth.config.ts        # Auth domain (CONVEX_SITE_URL || hardcoded fallback)
-  http.ts               # HTTP routes: auth + /agent/v1/* endpoints
-  users.ts              # getMe query
-  todos.ts              # list, create, toggle, remove
-  coach.ts              # session management, message store, getPendingSessions (internal)
-  goals.ts              # list (public), upsertGoal (internal), getUsersWithHistory (internal)
-  context.ts            # CRUD (public), upsertEntry (internal), getAllEntries (internal)
-  admin.ts              # deleteAllUsers (dev/debug only)
-  _generated/api.d.ts   # Manually maintained — add new modules here after adding convex/*.ts files
-.github/workflows/
-  deploy.yml            # ⚠️ BROKEN — SSH from GitHub IPs is blocked. Deploy manually (see below).
-ecosystem.config.js     # PM2 config for lifelup app (port 3000)
-scripts/setup-vps.sh    # One-time VPS provisioning script
-```
+### ✅ Task Completion
+- **Follow the WISC pipeline** for all new features: W (INITIAL.md) → I (/generate-prp) → S (review PRP) → C (/execute-prp).
+- **After implementing**, run the full validation sequence from the PRP before deploying to production.
+- **Production deploy is always manual** — GitHub Actions is broken (SSH blocked). See `PLANNING.md` for deploy commands.
+- **After deploying Convex schema changes**, no second deploy needed — `npx convex deploy` in Step 3 already pushed them.
 
-## Essential Commands
-```bash
-# Dev (runs locally on VPS — this Claude Code session IS the VPS)
-npm run dev
+### 📎 Style & Conventions
+- **TypeScript** — no `any` types. Use proper types or `unknown` with type guards.
+- **Tailwind CSS only** — no inline `style={{}}` props, ever.
+- **Convex functions** — every arg must use explicit `v` validators. Public functions always check auth via `getAuthUserId(ctx)`. Internal functions skip auth (intentional — agent-only access).
+- **Client components** — import Convex API from `@/convex/_generated/api`, never from `convex/` directly. Always add `"use client"` when using hooks.
+- **HTTP actions** — always use `internal.*` inside `httpAction` handlers, never `api.*`.
+- **Agent-writable tables** — must include `fingerprint` field + upsert-by-fingerprint pattern to prevent duplicate records on repeated agent runs.
 
-# Deploy Convex — run from /home/claude/dev/lifelUp
-CONVEX_SELF_HOSTED_URL=https://convex.aidigitalassistant.cloud \
-CONVEX_SELF_HOSTED_ADMIN_KEY="convex-self-hosted|01c9f2684963896109a7cd7da2420d0ef20298c454acc676a6eb214b76cf6587a32f56b98d" \
-npx convex deploy
+### 📚 Documentation & Explainability
+- **Update `PLANNING.md`** when the project structure changes, new pages are added, or new agents are created.
+- **Update the relevant `.claude/rules/` file** when adding a new pattern or discovering a new gotcha.
+- **After completing a feature via WISC**, the executed PRP in `PRPs/` serves as its documentation — leave it there.
+- **Comment non-obvious decisions** with an inline `// Why:` comment explaining the reasoning, not just the what.
 
-# Production deploy — GitHub Actions is BROKEN, run this directly on VPS:
-cd /var/www/lifelup && git pull origin main && npm ci --production=false && npm run build && pm2 restart lifelup
-
-# Restart Convex Docker
-cd /opt/convex && sudo docker compose down && sudo docker compose up -d
-
-# Coach polling agent (PM2 id=2) — restart after changes to coach-poll.mjs
-cd /home/claude/dev/lifelup-agent && pm2 restart lifelup-coach
-# Full restart with env vars:
-pm2 delete lifelup-coach && pm2 start ecosystem.config.cjs && pm2 save
-```
-
-## Environment Variables
-
-### Next.js app (`/var/www/lifelup/.env.production`)
-```
-NEXT_PUBLIC_CONVEX_URL=https://convex.aidigitalassistant.cloud
-```
-
-### Convex Docker (`/opt/convex/.env`)
-```
-INSTANCE_NAME=convex-self-hosted
-INSTANCE_SECRET=<secret>
-RUST_LOG=info
-CONVEX_CLOUD_ORIGIN=https://convex.aidigitalassistant.cloud
-CONVEX_SITE_ORIGIN=https://convex.aidigitalassistant.cloud
-```
-⚠️ `CONVEX_CLOUD_ORIGIN` and `CONVEX_SITE_ORIGIN` are critical — they set the JWT issuer.
-Both must equal the Convex public URL. Without them, `iss: ""` in JWTs → auth fails.
-
-### Convex runtime env (set via `npx convex env set`)
-```
-JWT_PRIVATE_KEY=<rsa-private-key-single-line>
-JWKS={"keys":[{"use":"sig","alg":"RS256",...}]}
-SITE_URL=https://lifelup.aidigitalassistant.cloud
-```
-
-## Conventions
-- All Convex queries/mutations in `convex/` — never import server utils in client components
-- Auth state: `useConvexAuth()` or `useAuthActions()` from `@convex-dev/auth/react`
-- Protected pages: check `isAuthenticated`, redirect to `/signin` via `useEffect`
-- `AuthErrorBoundary` in `ConvexClientProvider` clears stale tokens automatically
-- Tailwind only — no inline styles
-- Keep CLAUDE.md lean — domain details go in `.claude/rules/`
+### 🧠 AI Behavior Rules
+- **Never assume missing context. Read the file first.**
+- **Never hallucinate function names, table names, or env vars** — verify they exist in `convex/schema.ts`, `convex/_generated/api.d.ts`, or `PLANNING.md`.
+- **Never delete or overwrite existing code** unless explicitly instructed or called for by the PRP being executed.
+- **Never use `pm2 restart lifelup-coach --update-env`** — it silently wipes ANTHROPIC_API_KEY. Use the full delete+start cycle.
+- **Never use `api.*` inside `httpAction` handlers** — always `internal.*`.
+- **Always check the PRP confidence score** before executing. Score < 7 → clarify `INITIAL.md` before proceeding.

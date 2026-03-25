@@ -14,6 +14,8 @@ import type * as coach from "../coach.js";
 import type * as context from "../context.js";
 import type * as goals from "../goals.js";
 import type * as http from "../http.js";
+import type * as quests from "../quests.js";
+import type * as recurringTodos from "../recurringTodos.js";
 import type * as todos from "../todos.js";
 import type * as users from "../users.js";
 
@@ -30,6 +32,8 @@ declare const fullApi: ApiFromModules<{
   context: typeof context;
   goals: typeof goals;
   http: typeof http;
+  quests: typeof quests;
+  recurringTodos: typeof recurringTodos;
   todos: typeof todos;
   users: typeof users;
 }>;

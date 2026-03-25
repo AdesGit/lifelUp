@@ -50,9 +50,22 @@ export default function HomePage() {
             <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
               Context
             </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Recurring
+            </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Quests
+            </Link>
           </nav>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-3">
+          {me?.totalStars != null && (
+            <span className="text-sm font-medium text-yellow-500">⭐{me.totalStars}</span>
+          )}
+          <SignOutButton />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-6 p-8 pt-10">

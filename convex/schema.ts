@@ -10,12 +10,44 @@ const schema = defineSchema({
     emailVerificationTime: v.optional(v.number()),
     image: v.optional(v.string()),
     isAnonymous: v.optional(v.boolean()),
+    totalStars: v.optional(v.number()),
   }).index("email", ["email"]),
   todos: defineTable({
     userId: v.id("users"),
     text: v.string(),
     completed: v.boolean(),
+    starValue: v.optional(v.number()),
+    recurrenceId: v.optional(v.id("recurringTodos")),
   }).index("by_user", ["userId"]),
+  recurringTodos: defineTable({
+    userId: v.id("users"),
+    text: v.string(),
+    frequency: v.union(v.literal("daily"), v.literal("weekly")),
+    starValue: v.optional(v.number()),
+    lastSpawnedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_frequency", ["frequency"]),
+  quests: defineTable({
+    title: v.string(),
+    description: v.string(),
+    bonusStars: v.number(),
+    weekStart: v.number(),
+    status: v.union(v.literal("active"), v.literal("completed"), v.literal("expired")),
+    fingerprint: v.string(),
+  })
+    .index("by_status", ["status"])
+    .index("by_fingerprint", ["fingerprint"]),
+  questTodos: defineTable({
+    questId: v.id("quests"),
+    userId: v.id("users"),
+    recurringTodoId: v.id("recurringTodos"),
+    completed: v.boolean(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_quest", ["questId"])
+    .index("by_user", ["userId"])
+    .index("by_recurring_todo", ["recurringTodoId"]),
   agentSessions: defineTable({
     userId: v.id("users"),
     type: v.string(),

@@ -250,6 +250,14 @@ export default function ContextPage() {
             </Link>
             <span className="text-gray-300 dark:text-gray-600">·</span>
             <span className="text-blue-600 dark:text-blue-400 font-medium">Context</span>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Recurring
+            </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Quests
+            </Link>
           </nav>
         </div>
         <SignOutButton />

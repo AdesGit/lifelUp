@@ -79,3 +79,22 @@ export default function ProtectedPage() {
   return <div>Protected content</div>;
 }
 ```
+
+## Anti-Patterns
+
+- **Never** import from `convex/todos`, `convex/goals`, etc. directly in client components — always use `@/convex/_generated/api`
+- **Never** use `useConvexAuth()` or `useQuery()` in server components (no `"use client"`) — they throw
+- **Never** use `style={{}}` inline styles — use Tailwind utility classes, even for dynamic values (conditional class strings)
+- **Never** render page content before checking `isAuthenticated` — always show spinner or return null while loading
+- **Never** use `useEffect` for data fetching — use `useQuery()` which handles real-time updates automatically
+- **Never** create component files in `app/` — components go in `components/`, pages in `app/`
+
+## Page Checklist
+
+Every new protected page must have all of the following:
+- [ ] `"use client"` directive at top of file
+- [ ] `useConvexAuth()` with `useEffect` redirect to `/signin`
+- [ ] Loading spinner while `isLoading || !isAuthenticated` (copy from `app/goals/page.tsx`)
+- [ ] Navigation header identical to other pages (copy verbatim from `app/goals/page.tsx` header)
+- [ ] `<SignOutButton />` in the header
+- [ ] Active nav item highlighted (current page uses `text-blue-600` instead of `text-gray-500`)

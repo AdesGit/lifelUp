@@ -119,4 +119,106 @@ http.route({
   }),
 });
 
+// GET /agent/v1/recurring-work — returns templates needing a new spawn
+http.route({
+  path: "/agent/v1/recurring-work",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const templates = await ctx.runQuery(internal.recurringTodos.getTemplatesNeedingSpawn);
+    return Response.json(templates);
+  }),
+});
+
+// POST /agent/v1/recurring-spawn — spawn a todo from a recurring template
+http.route({
+  path: "/agent/v1/recurring-spawn",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const { templateId } = await req.json();
+    await ctx.runMutation(internal.recurringTodos.spawnTodo, { templateId });
+    return Response.json({ ok: true });
+  }),
+});
+
+// GET /agent/v1/todos-unevaluated — returns todos + recurring templates without starValue
+http.route({
+  path: "/agent/v1/todos-unevaluated",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const [todos, recurring] = await Promise.all([
+      ctx.runQuery(internal.todos.getUnevaluatedTodos),
+      ctx.runQuery(internal.recurringTodos.getUnevaluated),
+    ]);
+    const result = [
+      ...todos.map((t) => ({ type: "todo" as const, id: t._id, text: t.text })),
+      ...recurring.map((t) => ({ type: "recurring" as const, id: t._id, text: t.text })),
+    ];
+    return Response.json(result);
+  }),
+});
+
+// POST /agent/v1/todos-star — set star values on todos or recurring templates
+http.route({
+  path: "/agent/v1/todos-star",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const { ratings } = await req.json();
+    for (const rating of ratings) {
+      if (rating.type === "todo") {
+        await ctx.runMutation(internal.todos.setTodoStarValue, {
+          id: rating.id,
+          starValue: rating.starValue,
+        });
+      } else {
+        await ctx.runMutation(internal.recurringTodos.setStarValue, {
+          id: rating.id,
+          starValue: rating.starValue,
+        });
+      }
+    }
+    return Response.json({ ok: true, rated: ratings.length });
+  }),
+});
+
+// GET /agent/v1/quests-work — returns users with their recurring todos
+http.route({
+  path: "/agent/v1/quests-work",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const users = await ctx.runQuery(internal.quests.getUsersWithRecurring);
+    return Response.json(users);
+  }),
+});
+
+// POST /agent/v1/quests-save — upsert AI-generated quests
+http.route({
+  path: "/agent/v1/quests-save",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const { quests } = await req.json();
+    for (const quest of quests) {
+      await ctx.runMutation(internal.quests.upsertQuest, quest);
+    }
+    return Response.json({ ok: true, saved: quests.length });
+  }),
+});
+
 export default http;

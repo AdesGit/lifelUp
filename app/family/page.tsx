@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { SignOutButton } from "@/components/SignOutButton";
 import Link from "next/link";
@@ -23,6 +23,7 @@ export default function FamilyPage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const todos = useQuery(api.todos.listAll);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push("/signin");
@@ -47,8 +48,11 @@ export default function FamilyPage() {
   }, {}) ?? {};
 
   const users = Object.values(byUser) as UserGroup[];
-  const totalDone = todos?.filter((t: TodoItem) => t.completed).length ?? 0;
-  const totalAll = todos?.length ?? 0;
+  // Default to first user if none selected
+  const effectiveEmail = selectedEmail ?? users[0]?.email ?? null;
+  const selectedUser = effectiveEmail ? (byUser[effectiveEmail] ?? null) : null;
+  const selectedIndex = users.findIndex((u) => u.email === effectiveEmail);
+  const selectedColor = selectedIndex >= 0 ? COLORS[selectedIndex % COLORS.length] : COLORS[0];
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -73,72 +77,106 @@ export default function FamilyPage() {
             <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
               Context
             </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Recurring
+            </Link>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Quests
+            </Link>
           </nav>
         </div>
         <SignOutButton />
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-6 p-8 pt-10 max-w-2xl mx-auto w-full">
-        <div className="w-full flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Family todos</h2>
-          {totalAll > 0 && (
-            <span className="text-sm text-gray-500 dark:text-gray-400">{totalDone}/{totalAll} done</span>
+        <div className="w-full">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Family todos</h2>
+
+          {todos === undefined && (
+            <div className="flex justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            </div>
           )}
-        </div>
 
-        {todos === undefined && (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-          </div>
-        )}
+          {todos?.length === 0 && (
+            <p className="text-center text-gray-400 dark:text-gray-500 py-12 text-sm">
+              No todos yet in the family.
+            </p>
+          )}
 
-        {todos?.length === 0 && (
-          <p className="text-center text-gray-400 dark:text-gray-500 py-12 text-sm">
-            No todos yet in the family.
-          </p>
-        )}
-
-        <div className="w-full space-y-6">
-          {users.map(({ email, todos: userTodos }, i) => {
-            const done = userTodos.filter((t) => t.completed).length;
-            const color = COLORS[i % COLORS.length];
-            return (
-              <div key={email} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-8 h-8 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                    {initials(email)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{email}</p>
-                  </div>
-                  <span className="text-xs text-gray-400">{done}/{userTodos.length}</span>
-                </div>
-
-                {userTodos.length === 0 ? (
-                  <p className="text-xs text-gray-400 pl-11">No todos yet</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {userTodos.map((todo) => (
-                      <li key={todo._id} className="flex items-center gap-3 pl-11">
-                        <div className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          todo.completed ? `${color} border-transparent` : "border-gray-300"
-                        }`}>
-                          {todo.completed && (
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className={`text-sm ${todo.completed ? "line-through text-gray-400" : "text-gray-700 dark:text-gray-300"}`}>
-                          {todo.text}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+          {users.length > 0 && (
+            <>
+              {/* Tab bar */}
+              <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
+                {users.map(({ email, todos: userTodos }, i) => {
+                  const done = userTodos.filter((t) => t.completed).length;
+                  const color = COLORS[i % COLORS.length];
+                  return (
+                    <button
+                      key={email}
+                      onClick={() => setSelectedEmail(email)}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                        email === effectiveEmail
+                          ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                          : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                        {initials(email)}
+                      </div>
+                      <span>{email.split("@")[0]}</span>
+                      <span className="text-xs text-gray-400">{done}/{userTodos.length}</span>
+                    </button>
+                  );
+                })}
               </div>
-            );
-          })}
+
+              {/* Selected user's todos */}
+              {selectedUser && (
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-8 h-8 rounded-full ${selectedColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                      {initials(selectedUser.email)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{selectedUser.email}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {selectedUser.todos.filter((t) => t.completed).length}/{selectedUser.todos.length} done
+                    </span>
+                  </div>
+
+                  {selectedUser.todos.length === 0 ? (
+                    <p className="text-xs text-gray-400 pl-11">No todos yet</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {selectedUser.todos.map((todo) => (
+                        <li key={todo._id} className="flex items-center gap-3 pl-11">
+                          <div className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            todo.completed ? `${selectedColor} border-transparent` : "border-gray-300"
+                          }`}>
+                            {todo.completed && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm flex-1 ${todo.completed ? "line-through text-gray-400" : "text-gray-700 dark:text-gray-300"}`}>
+                            {todo.text}
+                          </span>
+                          {todo.starValue != null && (
+                            <span className="text-xs text-yellow-500">⭐{todo.starValue}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </main>

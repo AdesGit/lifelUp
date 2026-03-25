@@ -110,3 +110,29 @@ CONVEX_SELF_HOSTED_ADMIN_KEY="convex-self-hosted|01c9f268..." \
 npx convex deploy
 ```
 After schema changes: Convex will show added/deleted indexes — verify before continuing.
+
+## Known Gotchas
+
+### `||` vs `??` in auth.config.ts — do not change this
+`process.env.CONVEX_SITE_URL` is set to `""` (empty string) by the Convex runtime during CLI deploy evaluation — not `undefined`. The `??` operator only guards against `null`/`undefined`, so using `??` would pass the empty string through → JWT `iss: ""` → `NoAuthProvider` error on every authenticated query. Always use `||`.
+
+### api.d.ts — 3-step manual update when adding a new module
+1. Add `import type * as newmodule from "../newmodule.js";` at the top of `convex/_generated/api.d.ts`
+2. Add `newmodule: typeof newmodule;` to the `fullApi` `ApiFromModules` declaration
+3. Commit this change **before** running `npm run build`
+
+The server regenerates the full file during `npx convex deploy`, but the local committed copy is what `npm run build` reads. Skipping this causes TypeScript errors like `Property 'newmodule' does not exist on type 'FilteredAPI<...>'`.
+
+### HTTP Actions run on port 3211, not 3210
+- Port 3210 = Convex sync engine (WebSocket + standard HTTP API)
+- Port 3211 = Convex HTTP actions (your `http.ts` handlers)
+
+Nginx routes `/agent/` → 3211 on the Convex subdomain. When debugging with curl, use the public URL — Nginx handles the port routing.
+
+### `internal.*` inside httpActions — never `api.*`
+Inside `httpAction` handlers, always call `ctx.runQuery(internal.module.fn)` and `ctx.runMutation(internal.module.fn)`. Using `api.*` fails because HTTP actions don't have a user auth context. All agent-facing Convex functions must be `internalQuery` or `internalMutation`.
+
+### Index naming convention
+- Single field: `by_{field}` (e.g., `by_user`, `by_fingerprint`)
+- Compound: `by_{field1}_{field2}` (e.g., `by_user_fingerprint`)
+- The `by_user_fingerprint` compound index on `goals` enables efficient per-user upsert lookups without a full table scan.
