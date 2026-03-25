@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
 
 export default function CoachPage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -97,7 +98,10 @@ export default function CoachPage() {
             </Link>
           </nav>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-2">
+          <PushNotificationButton />
+          <SignOutButton />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto">

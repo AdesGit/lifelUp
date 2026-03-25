@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { SignOutButton } from "@/components/SignOutButton";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
 import Link from "next/link";
 
 function initials(email: string) {
@@ -87,7 +88,10 @@ export default function FamilyPage() {
             </Link>
           </nav>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-2">
+          <PushNotificationButton />
+          <SignOutButton />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-6 p-8 pt-10 max-w-2xl mx-auto w-full">

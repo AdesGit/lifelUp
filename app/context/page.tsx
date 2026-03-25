@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
 
 type ContextEntry = Doc<"contextEntries">;
 type Category = ContextEntry["category"];
@@ -260,7 +261,10 @@ export default function ContextPage() {
             </Link>
           </nav>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-2">
+          <PushNotificationButton />
+          <SignOutButton />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-8 pt-10 gap-8">

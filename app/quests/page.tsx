@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
 
 export default function QuestsPage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -58,10 +59,11 @@ export default function QuestsPage() {
             <span className="text-blue-600 dark:text-blue-400 font-medium">Quests</span>
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {me?.totalStars != null && (
             <span className="text-sm font-medium text-yellow-500">⭐{me.totalStars}</span>
           )}
+          <PushNotificationButton />
           <SignOutButton />
         </div>
       </header>
