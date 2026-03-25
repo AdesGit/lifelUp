@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 import { SignOutButton } from "@/components/SignOutButton";
 import { TodoList } from "@/components/TodoList";
+import { PushNotificationButton } from "@/components/PushNotificationButton";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -60,10 +61,11 @@ export default function HomePage() {
             </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {me?.totalStars != null && (
             <span className="text-sm font-medium text-yellow-500">⭐{me.totalStars}</span>
           )}
+          <PushNotificationButton />
           <SignOutButton />
         </div>
       </header>

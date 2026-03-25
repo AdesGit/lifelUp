@@ -221,4 +221,31 @@ http.route({
   }),
 });
 
+// GET /agent/v1/notify-due — recurring todos with nextDueAt <= now + their push subscriptions
+http.route({
+  path: "/agent/v1/notify-due",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const due = await ctx.runQuery(internal.todos.getDueRecurringTodos);
+    return Response.json(due);
+  }),
+});
+
+// POST /agent/v1/notify-reset — reset a recurring todo after notification sent
+http.route({
+  path: "/agent/v1/notify-reset",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const { todoId } = await req.json();
+    await ctx.runMutation(internal.todos.resetRecurringTodo, { id: todoId });
+    return Response.json({ ok: true });
+  }),
+});
+
 export default http;

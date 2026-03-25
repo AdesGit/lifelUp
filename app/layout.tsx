@@ -25,6 +25,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        {/* Register service worker for push notifications */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(e){console.warn('SW:',e)})})}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-gray-50 dark:bg-gray-950">
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>

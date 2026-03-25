@@ -18,7 +18,23 @@ const schema = defineSchema({
     completed: v.boolean(),
     starValue: v.optional(v.number()),
     recurrenceId: v.optional(v.id("recurringTodos")),
-  }).index("by_user", ["userId"]),
+    // Native recurring fields (new model — no separate table needed)
+    isRecurring: v.optional(v.boolean()),
+    frequency: v.optional(v.union(v.literal("daily"), v.literal("weekly"))),
+    scheduledTime: v.optional(v.string()), // "HH:MM" UTC 24h
+    nextDueAt: v.optional(v.number()),     // timestamp of next reset/notification
+  })
+    .index("by_user", ["userId"])
+    .index("by_next_due", ["nextDueAt"]),
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
   recurringTodos: defineTable({
     userId: v.id("users"),
     text: v.string(),

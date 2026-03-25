@@ -8,18 +8,29 @@ import { Doc, Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
 
-type RecurringTodo = Doc<"recurringTodos">;
+type Todo = Doc<"todos">;
+
+function formatNextDue(nextDueAt: number): string {
+  const diff = nextDueAt - Date.now();
+  if (diff <= 0) return "due now";
+  const hours = Math.floor(diff / 3_600_000);
+  const mins = Math.floor((diff % 3_600_000) / 60_000);
+  if (hours < 1) return `${mins}m`;
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
 
 export default function RecurringTodosPage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const router = useRouter();
-  const templates = useQuery(api.recurringTodos.list);
-  const create = useMutation(api.recurringTodos.create);
-  const remove = useMutation(api.recurringTodos.remove);
+  const todos = useQuery(api.todos.list);
+  const create = useMutation(api.todos.create);
+  const remove = useMutation(api.todos.remove);
 
   const [showForm, setShowForm] = useState(false);
   const [newText, setNewText] = useState("");
-  const [newFrequency, setNewFrequency] = useState<"daily" | "weekly">("daily");
+  const [frequency, setFrequency] = useState<"daily" | "weekly">("daily");
+  const [scheduledTime, setScheduledTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -34,13 +45,15 @@ export default function RecurringTodosPage() {
     );
   }
 
+  const recurringTodos = todos?.filter((t: Todo) => t.isRecurring) ?? [];
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = newText.trim();
     if (!trimmed) return;
     setSaving(true);
     try {
-      await create({ text: trimmed, frequency: newFrequency });
+      await create({ text: trimmed, isRecurring: true, frequency, scheduledTime });
       setNewText("");
       setShowForm(false);
     } finally {
@@ -85,11 +98,11 @@ export default function RecurringTodosPage() {
       </header>
 
       <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-8 pt-10 gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recurring Tasks</h2>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-              Auto-spawn as todos on their schedule
+              Auto-reset at their scheduled time · you can also create them from the main todo list
             </p>
           </div>
           {!showForm && (
@@ -115,29 +128,40 @@ export default function RecurringTodosPage() {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               autoFocus
             />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setNewFrequency("daily")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  newFrequency === "daily"
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400"
-                }`}
-              >
-                Daily
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewFrequency("weekly")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  newFrequency === "weekly"
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400"
-                }`}
-              >
-                Weekly
-              </button>
+            <div className="flex items-center gap-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFrequency("daily")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                    frequency === "daily"
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400"
+                  }`}
+                >
+                  Daily
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFrequency("weekly")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                    frequency === "weekly"
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400"
+                  }`}
+                >
+                  Weekly
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-xs text-gray-400">UTC</span>
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -158,49 +182,63 @@ export default function RecurringTodosPage() {
           </form>
         )}
 
-        {templates === undefined && (
+        {todos === undefined && (
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           </div>
         )}
 
-        {templates !== null && templates?.length === 0 && !showForm && (
-          <p className="text-center text-gray-400 dark:text-gray-500 py-12 text-sm">
-            No recurring tasks yet. Create one to get started!
-          </p>
+        {todos !== undefined && recurringTodos.length === 0 && !showForm && (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+            <div className="text-4xl">🔄</div>
+            <p className="text-gray-900 dark:text-white font-medium">No recurring tasks yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
+              Create one here or toggle &ldquo;Recurring&rdquo; when adding a task from the main list.
+            </p>
+          </div>
         )}
 
-        {templates !== null && (
-          <ul className="space-y-2">
-            {templates?.map((t: RecurringTodo) => (
-              <li
-                key={t._id}
-                className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
-              >
-                <span className="flex-1 text-sm text-gray-800 dark:text-gray-200">{t.text}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  t.frequency === "daily"
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
-                    : "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-400"
-                }`}>
-                  {t.frequency === "daily" ? "Daily" : "Weekly"}
-                </span>
-                <span className="text-xs text-yellow-500 font-medium">
-                  {t.starValue != null ? `⭐${t.starValue}` : "·"}
-                </span>
-                <button
-                  onClick={() => remove({ id: t._id as Id<"recurringTodos"> })}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
-                  aria-label="Delete"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        <ul className="space-y-2">
+          {recurringTodos.map((t: Todo) => (
+            <li
+              key={t._id}
+              className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+            >
+              <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                t.completed ? "bg-green-500 border-green-500" : "border-gray-300 dark:border-gray-600"
+              }`}>
+                {t.completed && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm ${t.completed ? "line-through text-gray-400" : "text-gray-800 dark:text-gray-200"}`}>
+                  {t.text}
+                </p>
+                <p className="text-xs text-blue-400 mt-0.5">
+                  {t.frequency === "daily" ? "Daily" : "Weekly"} · {t.scheduledTime} UTC
+                  {t.completed && t.nextDueAt != null && (
+                    <span className="text-gray-400"> · resets in {formatNextDue(t.nextDueAt)}</span>
+                  )}
+                </p>
+              </div>
+              <span className="text-xs text-yellow-500 font-medium flex-shrink-0">
+                {t.starValue != null ? `⭐${t.starValue}` : "·"}
+              </span>
+              <button
+                onClick={() => remove({ id: t._id as Id<"todos"> })}
+                className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                aria-label="Delete"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </main>
   );
