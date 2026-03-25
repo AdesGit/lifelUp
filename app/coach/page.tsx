@@ -1,6 +1,6 @@
 "use client";
 
-import { useConvexAuth, useQuery, useMutation, useAction } from "convex/react";
+import { useConvexAuth, useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
@@ -19,7 +19,7 @@ export default function CoachPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getOrCreateSession = useMutation(api.coach.getOrCreateSession);
-  const sendMessage = useAction(api.coach.sendMessage);
+  const sendMessage = useMutation(api.coach.sendMessage);
   const messages = useQuery(
     api.coach.listMessages,
     sessionId ? { sessionId } : "skip"
@@ -38,6 +38,10 @@ export default function CoachPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
+
+  // Show typing indicator when: currently sending OR last message is from user (awaiting Claude Code reply)
+  const lastMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
+  const isWaitingForReply = sending || (lastMessage?.role === "user");
 
   const handleSend = async () => {
     if (!input.trim() || !sessionId || sending) return;
@@ -110,7 +114,7 @@ export default function CoachPage() {
             ))
           )}
 
-          {sending && (
+          {isWaitingForReply && (
             <div className="flex justify-start">
               <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3">
                 <div className="flex gap-1 items-center h-4">

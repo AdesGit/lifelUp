@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
-import Anthropic from "@anthropic-ai/sdk";
+
+// ─── Public queries (web app) ──────────────────────────────────────────────
 
 export const getOrCreateSession = mutation({
   args: {},
@@ -40,7 +40,73 @@ export const listMessages = query({
   },
 });
 
-// Internal version used by actions to avoid circular type reference
+// User sends a message — stored immediately, Claude Code agent will reply async
+export const sendMessage = mutation({
+  args: {
+    sessionId: v.id("agentSessions"),
+    content: v.string(),
+  },
+  handler: async (ctx, { sessionId, content }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    await ctx.db.insert("agentMessages", {
+      sessionId,
+      userId,
+      role: "user",
+      content,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// ─── Internal queries (Claude Code polling agent) ─────────────────────────
+
+// Returns all sessions where the last message is from the user (needs a reply)
+export const getPendingSessions = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const sessions = await ctx.db.query("agentSessions").collect();
+    const pending = [];
+
+    for (const session of sessions) {
+      const lastMsg = await ctx.db
+        .query("agentMessages")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .order("desc")
+        .first();
+
+      if (!lastMsg || lastMsg.role !== "user") continue;
+
+      // Only pick up messages less than 10 minutes old
+      const age = Date.now() - lastMsg.createdAt;
+      if (age > 10 * 60 * 1000) continue;
+
+      const user = await ctx.db.get(session.userId);
+      const todos = await ctx.db
+        .query("todos")
+        .withIndex("by_user", (q) => q.eq("userId", session.userId))
+        .collect();
+      const history = await ctx.db
+        .query("agentMessages")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .order("asc")
+        .collect();
+
+      pending.push({
+        sessionId: session._id,
+        userId: session.userId,
+        userEmail: user?.email ?? "unknown",
+        todos: todos.map((t) => ({ text: t.text, completed: t.completed })),
+        history: history.map((m) => ({ role: m.role, content: m.content })),
+      });
+    }
+
+    return pending;
+  },
+});
+
+// Internal version for reading messages (no auth required — used by agent)
 export const getMessages = internalQuery({
   args: { sessionId: v.id("agentSessions") },
   handler: async (ctx, { sessionId }) => {
@@ -51,6 +117,8 @@ export const getMessages = internalQuery({
       .collect();
   },
 });
+
+// ─── Internal mutations (Claude Code polling agent) ───────────────────────
 
 export const saveMessage = internalMutation({
   args: {
@@ -67,77 +135,5 @@ export const saveMessage = internalMutation({
       content,
       createdAt: Date.now(),
     });
-  },
-});
-
-export const sendMessage = action({
-  args: {
-    sessionId: v.id("agentSessions"),
-    content: v.string(),
-  },
-  handler: async (ctx, { sessionId, content }): Promise<string> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const [user, todos, history] = await Promise.all([
-      ctx.runQuery(api.users.getMe),
-      ctx.runQuery(api.todos.list),
-      ctx.runQuery(internal.coach.getMessages, { sessionId }),
-    ]);
-
-    // Save user message immediately so it appears in UI
-    await ctx.runMutation(internal.coach.saveMessage, {
-      sessionId,
-      userId,
-      role: "user",
-      content,
-    });
-
-    const pending = todos.filter((t) => !t.completed);
-    const completed = todos.filter((t) => t.completed);
-    const today = new Date().toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    const systemPrompt = `You are a personal life coach inside LifeLup, a gamified life management app.
-Your role: help users reflect, prioritize, and stay aligned with their goals.
-Style: warm, direct, concise. Ask one follow-up question at a time. Keep replies under 150 words.
-
-User: ${user?.email ?? "unknown"}
-Date: ${today}
-
-Their tasks right now:
-Pending (${pending.length}): ${pending.length ? pending.map((t) => `"${t.text}"`).join(", ") : "none"}
-Done today (${completed.length}): ${completed.length ? completed.map((t) => `"${t.text}"`).join(", ") : "none"}
-
-Use this context naturally — don't list it back verbatim. Focus on what matters to them.`;
-
-    const messages: { role: "user" | "assistant"; content: string }[] = [
-      ...history.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content },
-    ];
-
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      system: systemPrompt,
-      messages,
-    });
-
-    const reply =
-      response.content[0].type === "text" ? response.content[0].text : "";
-
-    await ctx.runMutation(internal.coach.saveMessage, {
-      sessionId,
-      userId,
-      role: "assistant",
-      content: reply,
-    });
-
-    return reply;
   },
 });
