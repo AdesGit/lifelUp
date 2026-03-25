@@ -93,11 +93,19 @@ export const getPendingSessions = internalQuery({
         .order("asc")
         .collect();
 
+      const contextEntries = await ctx.db.query("contextEntries").collect();
+
       pending.push({
         sessionId: session._id,
         userId: session.userId,
         userEmail: user?.email ?? "unknown",
         todos: todos.map((t) => ({ text: t.text, completed: t.completed })),
+        context: contextEntries.map((e) => ({
+          title: e.title,
+          category: e.category,
+          content: e.content,
+          tags: e.tags,
+        })),
         history: history.map((m) => ({ role: m.role, content: m.content })),
       });
     }

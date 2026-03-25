@@ -90,4 +90,33 @@ http.route({
   }),
 });
 
+// GET /agent/v1/context — returns all context entries
+http.route({
+  path: "/agent/v1/context",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const entries = await ctx.runQuery(internal.context.getAllEntries);
+    return Response.json(entries);
+  }),
+});
+
+// POST /agent/v1/context-save — upsert AI-extracted context entries
+http.route({
+  path: "/agent/v1/context-save",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const { entries } = await req.json();
+    for (const entry of entries) {
+      await ctx.runMutation(internal.context.upsertEntry, entry);
+    }
+    return Response.json({ ok: true, saved: entries.length });
+  }),
+});
+
 export default http;
