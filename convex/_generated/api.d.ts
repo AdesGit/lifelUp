@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as coach from "../coach.js";
+import type * as goals from "../goals.js";
 import type * as http from "../http.js";
 import type * as todos from "../todos.js";
 import type * as users from "../users.js";
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
   coach: typeof coach;
+  goals: typeof goals;
   http: typeof http;
   todos: typeof todos;
   users: typeof users;

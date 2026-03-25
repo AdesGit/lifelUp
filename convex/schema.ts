@@ -28,6 +28,27 @@ const schema = defineSchema({
     content: v.string(),
     createdAt: v.number(),
   }).index("by_session", ["sessionId"]),
+  goals: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    category: v.union(
+      v.literal("health"),
+      v.literal("career"),
+      v.literal("learning"),
+      v.literal("family"),
+      v.literal("finance"),
+      v.literal("personal"),
+    ),
+    horizon: v.union(v.literal("medium"), v.literal("long")),
+    progress: v.number(),
+    evidence: v.array(v.string()),
+    nextActions: v.array(v.string()),
+    status: v.union(v.literal("active"), v.literal("achieved"), v.literal("dropped")),
+    fingerprint: v.string(),
+    extractedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_fingerprint", ["userId", "fingerprint"]),
 });
 
 export default schema;

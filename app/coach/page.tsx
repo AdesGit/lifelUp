@@ -79,6 +79,10 @@ export default function CoachPage() {
             </Link>
             <span className="text-gray-300 dark:text-gray-600">·</span>
             <span className="text-blue-600 dark:text-blue-400 font-medium">Coach</span>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Goals
+            </Link>
           </nav>
         </div>
         <SignOutButton />

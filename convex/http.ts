@@ -47,4 +47,47 @@ http.route({
   }),
 });
 
+// GET /agent/v1/goals-work — returns all users + their history + existing goals
+http.route({
+  path: "/agent/v1/goals-work",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const users = await ctx.runQuery(internal.goals.getUsersWithHistory);
+    const work = await Promise.all(
+      users.map(async (user) => {
+        const [messages, existingGoals] = await Promise.all([
+          ctx.runQuery(internal.goals.getAllMessagesForUser, { userId: user._id }),
+          ctx.runQuery(internal.goals.getGoalsForUser, { userId: user._id }),
+        ]);
+        return {
+          userId: user._id,
+          userEmail: user.email ?? "unknown",
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          existingGoals,
+        };
+      })
+    );
+    return Response.json(work);
+  }),
+});
+
+// POST /agent/v1/goals-save — upsert extracted goals for one user
+http.route({
+  path: "/agent/v1/goals-save",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const { userId, goals } = await req.json();
+    for (const goal of goals) {
+      await ctx.runMutation(internal.goals.upsertGoal, { userId, ...goal });
+    }
+    return Response.json({ ok: true, saved: goals.length });
+  }),
+});
+
 export default http;
