@@ -13,42 +13,55 @@
 ```
 app/
   layout.tsx            # Root layout — wraps with ConvexClientProvider
-  page.tsx              # Protected home — todo list
-  signin/page.tsx       # Sign in / sign up
+  page.tsx              # Protected home — per-user todo list
+  family/page.tsx       # Family view — all users' todos
+  coach/page.tsx        # AI coach chat (real-time, polling-based)
+  goals/page.tsx        # AI-extracted medium/long-term goals per user
+  context/page.tsx      # Family knowledge base (fiches mémo)
+  signin/page.tsx       # Sign in only (sign-up disabled)
 components/
   ConvexClientProvider.tsx  # ConvexAuthProvider + AuthErrorBoundary
-  SignInForm.tsx         # Email/password form (signIn/signUp toggle)
+  SignInForm.tsx         # Email/password sign-in form
   SignOutButton.tsx      # Signs out + redirects to /signin
   TodoList.tsx           # Per-user real-time todo list
 convex/
-  schema.ts             # authTables + users + todos
+  schema.ts             # All tables: authTables + users + todos + agentSessions + agentMessages + goals + contextEntries
   auth.ts               # Password provider
   auth.config.ts        # Auth domain (CONVEX_SITE_URL || hardcoded fallback)
-  http.ts               # auth.addHttpRoutes(http)
+  http.ts               # HTTP routes: auth + /agent/v1/* endpoints
   users.ts              # getMe query
   todos.ts              # list, create, toggle, remove
+  coach.ts              # session management, message store, getPendingSessions (internal)
+  goals.ts              # list (public), upsertGoal (internal), getUsersWithHistory (internal)
+  context.ts            # CRUD (public), upsertEntry (internal), getAllEntries (internal)
   admin.ts              # deleteAllUsers (dev/debug only)
+  _generated/api.d.ts   # Manually maintained — add new modules here after adding convex/*.ts files
 .github/workflows/
-  deploy.yml            # Auto-deploy on push to main via SSH
-ecosystem.config.js     # PM2 config (port 3000)
+  deploy.yml            # ⚠️ BROKEN — SSH from GitHub IPs is blocked. Deploy manually (see below).
+ecosystem.config.js     # PM2 config for lifelup app (port 3000)
 scripts/setup-vps.sh    # One-time VPS provisioning script
 ```
 
 ## Essential Commands
 ```bash
-# Dev
+# Dev (runs locally on VPS — this Claude Code session IS the VPS)
 npm run dev
 
-# Deploy Convex (from VPS or with external URL)
+# Deploy Convex — run from /home/claude/dev/lifelUp
 CONVEX_SELF_HOSTED_URL=https://convex.aidigitalassistant.cloud \
-CONVEX_SELF_HOSTED_ADMIN_KEY="convex-self-hosted|01c9f268..." \
+CONVEX_SELF_HOSTED_ADMIN_KEY="convex-self-hosted|01c9f2684963896109a7cd7da2420d0ef20298c454acc676a6eb214b76cf6587a32f56b98d" \
 npx convex deploy
 
-# Production deploy (VPS)
+# Production deploy — GitHub Actions is BROKEN, run this directly on VPS:
 cd /var/www/lifelup && git pull origin main && npm ci --production=false && npm run build && pm2 restart lifelup
 
 # Restart Convex Docker
 cd /opt/convex && sudo docker compose down && sudo docker compose up -d
+
+# Coach polling agent (PM2 id=2) — restart after changes to coach-poll.mjs
+cd /home/claude/dev/lifelup-agent && pm2 restart lifelup-coach
+# Full restart with env vars:
+pm2 delete lifelup-coach && pm2 start ecosystem.config.cjs && pm2 save
 ```
 
 ## Environment Variables
