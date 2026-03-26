@@ -47,7 +47,7 @@ function EntryCard({
   onDelete: (id: Id<"contextEntries">) => void;
 }) {
   return (
-    <div className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 space-y-3">
+    <div className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <h4 className="font-medium text-gray-900 dark:text-white leading-snug">{entry.title}</h4>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -123,7 +123,7 @@ function EntryModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 w-full max-w-lg shadow-xl space-y-4"
+        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6 w-full max-w-lg shadow-xl space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -162,7 +162,7 @@ function EntryModal({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Describe the details — IP addresses, key people, how things work, anything worth remembering…"
-              rows={5}
+              rows={3}
               className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               required
             />
@@ -230,44 +230,44 @@ export default function ContextPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">LifeLup</h1>
-          <nav className="flex gap-2 text-sm">
-            <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              My todos
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Family
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Coach
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Goals
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">Context</span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Recurring
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Quests
-            </Link>
-          </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm overflow-x-auto mx-2 min-w-0">
+          <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            My todos
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Family
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Coach
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Goals
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">Context</span>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Recurring
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Quests
+          </Link>
+        </nav>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <PushNotificationButton />
           <SignOutButton />
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-8 pt-10 gap-8">
+      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-4 sm:p-8 pt-6 sm:pt-10 gap-6 sm:gap-8">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Family context</h2>

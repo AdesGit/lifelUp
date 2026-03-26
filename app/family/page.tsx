@@ -57,44 +57,44 @@ export default function FamilyPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">LifeLup</h1>
-          <nav className="flex gap-2 text-sm">
-            <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              My todos
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">Family</span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Coach
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Goals
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Context
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Recurring
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Quests
-            </Link>
-          </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm overflow-x-auto mx-2 min-w-0">
+          <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            My todos
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">Family</span>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Coach
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Goals
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Context
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Recurring
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Quests
+          </Link>
+        </nav>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <PushNotificationButton />
           <SignOutButton />
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col items-center gap-6 p-8 pt-10 max-w-2xl mx-auto w-full">
+      <div className="flex flex-1 flex-col items-center gap-6 p-4 sm:p-8 pt-6 sm:pt-10 max-w-2xl mx-auto w-full">
         <div className="w-full">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Family todos</h2>
 
@@ -121,7 +121,7 @@ export default function FamilyPage() {
                     <button
                       key={email}
                       onClick={() => setSelectedEmail(email)}
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                         email === effectiveEmail
                           ? "border-blue-500 text-blue-600 dark:text-blue-400"
                           : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
@@ -130,7 +130,7 @@ export default function FamilyPage() {
                       <div className={`w-5 h-5 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
                         {initials(email)}
                       </div>
-                      <span>{email.split("@")[0]}</span>
+                      <span className="max-w-[80px] sm:max-w-none truncate">{email.split("@")[0]}</span>
                       <span className="text-xs text-gray-400">{done}/{userTodos.length}</span>
                     </button>
                   );
@@ -139,7 +139,7 @@ export default function FamilyPage() {
 
               {/* Selected user's todos */}
               {selectedUser && (
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-8 h-8 rounded-full ${selectedColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
                       {initials(selectedUser.email)}
@@ -153,11 +153,11 @@ export default function FamilyPage() {
                   </div>
 
                   {selectedUser.todos.length === 0 ? (
-                    <p className="text-xs text-gray-400 pl-11">No todos yet</p>
+                    <p className="text-xs text-gray-400 pl-8 sm:pl-11">No todos yet</p>
                   ) : (
                     <ul className="space-y-2">
                       {selectedUser.todos.map((todo) => (
-                        <li key={todo._id} className="flex items-center gap-3 pl-11">
+                        <li key={todo._id} className="flex items-center gap-3 pl-8 sm:pl-11">
                           <div className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                             todo.completed ? `${selectedColor} border-transparent` : "border-gray-300"
                           }`}>

@@ -46,7 +46,7 @@ function relativeTime(ts: number): string {
 
 function GoalCard({ goal }: { goal: Goal }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <h4 className="font-medium text-gray-900 dark:text-white leading-snug">{goal.title}</h4>
         <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -122,44 +122,44 @@ export default function GoalsPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">LifeLup</h1>
-          <nav className="flex gap-2 text-sm">
-            <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              My todos
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Family
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Coach
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">Goals</span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Context
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Recurring
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Quests
-            </Link>
-          </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm overflow-x-auto mx-2 min-w-0">
+          <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            My todos
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Family
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Coach
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">Goals</span>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Context
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Recurring
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Quests
+          </Link>
+        </nav>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <PushNotificationButton />
           <SignOutButton />
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-8 pt-10 gap-8">
+      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-4 sm:p-8 pt-6 sm:pt-10 gap-6 sm:gap-8">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Your goals</h2>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">

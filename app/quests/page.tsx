@@ -28,38 +28,38 @@ export default function QuestsPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">LifeLup</h1>
-          <nav className="flex gap-2 text-sm flex-wrap">
-            <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              My todos
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Family
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Coach
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Goals
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Context
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Recurring
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">Quests</span>
-          </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm overflow-x-auto mx-2 min-w-0">
+          <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            My todos
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Family
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Coach
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Goals
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Context
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/todos/recurring" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Recurring
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">Quests</span>
+        </nav>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {me?.totalStars != null && (
             <span className="text-sm font-medium text-yellow-500">⭐{me.totalStars}</span>
           )}
@@ -68,7 +68,7 @@ export default function QuestsPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-8 pt-10 gap-6">
+      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-4 sm:p-8 pt-6 sm:pt-10 gap-4 sm:gap-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">This week&apos;s quests</h2>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
@@ -109,7 +109,7 @@ export default function QuestsPage() {
               return (
                 <div
                   key={quest._id}
-                  className={`bg-white dark:bg-gray-900 rounded-2xl border p-5 space-y-4 ${
+                  className={`bg-white dark:bg-gray-900 rounded-2xl border p-3 sm:p-5 space-y-4 ${
                     isCompleted
                       ? "border-green-200 dark:border-green-800"
                       : "border-gray-200 dark:border-gray-800"

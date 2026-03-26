@@ -1,111 +1,130 @@
-# Feature Request: Gamification — Stars, Recurring Todos & Quests
+# Feature Request: Full Frontend Responsive Design
 
 ---
 
 ## What (Goal)
-Transform the todo system into a lightweight gamification layer: users earn stars (points) by completing tasks, recurring todos auto-reset daily/weekly, a background agent assigns star values to each task, and a weekly quest agent groups tasks into bonus-point challenges. The family page gains per-user tabs so clicking a user shows only their todos.
+Make the entire LifeLup frontend fully responsive so the app works well on mobile devices (320px–768px), tablets (768px–1024px), and desktops (1024px+). Currently, all pages share a broken navigation header that overflows on small screens, and paddings/layouts are fixed without mobile breakpoints.
 
 ## Who Uses It
-- [x] Single user (authenticated, per-user data) — stars, recurring todos
-- [x] All family members (shared data, visible to everyone) — family tabs view
-- [x] Background agent only (no user session, HTTP endpoints) — star evaluator, quest generator
-- [x] Scheduled job (RemoteTrigger, runs daily/weekly automatically) — recurring reset, quest generation
+- [x] Single user (authenticated, per-user data) — uses the app on mobile phone
+- [x] All family members — family members likely access from various devices including phones
 
 ## Success Criteria
-- [ ] Family page shows one tab per user; clicking a tab shows only that user's todos
-- [ ] Each todo has a star value (1–5) assigned by the evaluator agent
-- [ ] Completing a todo adds its star value to the user's total star count
-- [ ] A management screen at `/todos/recurring` lets users create/edit/delete recurring todos (daily or weekly)
-- [ ] Recurring todos auto-respawn at the correct interval (daily agent resets completed daily todos; weekly agent resets weekly ones)
-- [ ] A `/quests` page shows the current week's active quests with progress and bonus stars
-- [ ] Completing all todos in a quest grants bonus stars automatically
+- [ ] Navigation header works on all screen sizes — either collapses to a compact/scrollable format on mobile or uses a hamburger menu
+- [ ] All page containers use responsive padding: `p-4 sm:p-8` instead of fixed `p-8`
+- [ ] All cards use responsive padding: `p-3 sm:p-5`
+- [ ] TodoList form (input + submit button) stacks vertically on mobile: `flex-col sm:flex-row`
+- [ ] Recurring todo form controls (frequency selector + time input) stack on mobile
+- [ ] Family page tabs scroll horizontally and labels truncate properly on mobile
+- [ ] Coach page message bubbles are readable on mobile (correct max-width)
+- [ ] Context page modal and textarea are usable on mobile (`rows={3} sm:rows={5}`)
+- [ ] Sign-in page is properly centered and padded on mobile
 - [ ] App builds without TypeScript errors (`npm run build`)
 - [ ] Lint passes with zero warnings (`npm run lint`)
-- [ ] Unauthenticated users are redirected to `/signin`
-- [ ] All new agent endpoints return 401 for wrong Bearer token
+- [ ] Manual check on 375px width (iPhone SE viewport) — no horizontal scrolling, no overflowing elements
 
 ## Layers Affected
-- [x] Convex schema (new columns on todos, new tables: recurringTodos, quests, questTodos)
-- [x] Convex functions (new queries and mutations for recurring, stars, quests)
-- [x] HTTP agent endpoints (`convex/http.ts` — evaluator + quest generator + recurring reset)
-- [x] Next.js page (family page tabs, new /todos/recurring page, new /quests page)
-- [x] React component (UserTabs component, StarBadge component, QuestCard component)
-- [x] Background agent script (star-evaluator.mjs — assigns point values to todos)
-- [x] PM2 process (lifelup-star-evaluator in ecosystem.config.cjs)
-- [x] RemoteTrigger (daily recurring reset + weekly quest generation)
+- [ ] Next.js pages (all pages in `app/` directory — 7 pages total)
+- [ ] React components (`components/TodoList.tsx`, `components/SignInForm.tsx`, `components/SignOutButton.tsx`, `components/PushNotificationButton.tsx`)
+- [ ] No Convex schema changes
+- [ ] No new agent scripts
+- [ ] No new pages
 
-## Convex Tables Needed
+## Specific Issues to Fix (per file)
 
-### Modify: `todos`
-Add columns:
-- `starValue: v.optional(v.number())` — 1–5, set by evaluator agent (null until evaluated)
-- `recurrenceId: v.optional(v.id("recurringTodos"))` — links to recurring template if spawned from one
+### Navigation Header (shared across all pages)
+All pages repeat the same header pattern. Issues:
+- `px-6 py-4` → `px-4 sm:px-6 py-3 sm:py-4`
+- Navigation links: 7 items with `·` separators overflow on mobile (<640px)
+- Fix: On mobile, convert nav to a horizontal scroll with `overflow-x-auto` and smaller `text-xs` links, or use a bottom navigation bar pattern
+- Stars display in header: `flex items-center gap-2` — ensure it doesn't get cut off
 
-### New: `recurringTodos`
-- `userId: v.id("users")`
-- `text: v.string()`
-- `frequency: v.union(v.literal("daily"), v.literal("weekly"))`
-- `starValue: v.optional(v.number())` — assigned by evaluator
-- `lastSpawnedAt: v.optional(v.number())` — timestamp of last todo creation
-- Indexes: `by_user`, `by_frequency`
+### `app/page.tsx` (Home/My Todos)
+- Header: responsive padding
+- Nav: horizontal scroll or collapse
+- Page container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
 
-### Modify: `users`
-Add column:
-- `totalStars: v.optional(v.number())` — cumulative stars earned (default 0)
+### `app/goals/page.tsx`
+- Header: responsive padding
+- Nav: same fix
+- Container: `p-8` → `p-4 sm:p-8`
+- Goal cards: `p-5` → `p-3 sm:p-5`
 
-### New: `quests`
-- `title: v.string()`
-- `description: v.string()`
-- `bonusStars: v.number()`
-- `weekStart: v.number()` — Monday timestamp of the week this quest is for
-- `status: v.union(v.literal("active"), v.literal("completed"), v.literal("expired"))`
-- `fingerprint: v.string()` — "week-YYYY-WW:slug"
-- Indexes: `by_status`, `by_fingerprint`
+### `app/family/page.tsx`
+- Header: responsive padding
+- Nav: same fix
+- Container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
+- Tab bar: already has `overflow-x-auto` ✓ — add `truncate max-w-[120px]` on tab labels
+- Tab buttons: `px-4 py-3` → `px-3 py-2 sm:px-4 sm:py-3`
+- Cards: `p-5` → `p-3 sm:p-5`
+- List item: `pl-11` → `pl-8 sm:pl-11`
 
-### New: `questTodos`
-- `questId: v.id("quests")`
-- `userId: v.id("users")`
-- `todoText: v.string()` — description of the todo type to complete
-- `completed: v.boolean()`
-- `completedTodoId: v.optional(v.id("todos"))` — which actual todo completed it
-- Indexes: `by_quest`, `by_user`
+### `app/context/page.tsx`
+- Header: responsive padding
+- Nav: same fix
+- Container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
+- Modal: `p-6` → `p-4 sm:p-6`
+- Textarea: `rows={5}` → `rows={3}`
 
-## UI Sketch
+### `app/quests/page.tsx`
+- Header: responsive padding
+- Nav: same fix
+- Container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
+- Quest cards: `p-5` → `p-3 sm:p-5`
 
-**Family page (modified):**
-- Replace the flat list with horizontal tabs, one per user (show user email/name)
-- Clicking a tab shows only that user's todos (same todo card style)
-- Active tab: blue underline, inactive: gray
+### `app/coach/page.tsx`
+- Header: responsive padding
+- Nav: same fix
+- Message bubbles: `max-w-[80%]` → `max-w-[85%] sm:max-w-[75%]`
+- Input area: responsive padding
 
-**Recurring todos page (`/todos/recurring`):**
-- Header: "Recurring Tasks" with "+ New" button
-- Simple list: task text | Daily/Weekly badge | star value | delete button
-- "+ New" opens an inline form: text input + Daily/Weekly toggle + Save button
-- No complex scheduling — just daily or weekly, that's it
+### `app/signin/page.tsx`
+- Container: `p-8` → `p-4 sm:p-8`
+- Emoji heading: `text-5xl` → `text-4xl sm:text-5xl`
 
-**Quests page (`/quests`):**
-- Header: "This week's quests" + total stars badge for the user
-- Quest cards: title, description, progress bar (X/N tasks done), bonus stars badge
-- Completed quests shown with green checkmark and "Bonus earned" label
-- Each quest shows the list of required todo types
+### `app/todos/recurring/page.tsx`
+- Header: responsive padding
+- Nav: same fix
+- Container: `p-8 pt-10 gap-6` → `p-4 sm:p-8 sm:pt-10 gap-4 sm:gap-6`
+- Form controls: add `flex-col sm:flex-row` for frequency/time row
+
+### `components/TodoList.tsx`
+- Input + submit button row: `flex gap-2` → `flex flex-col sm:flex-row gap-2`
+- Recurring toggle row (frequency select + time input + UTC): `flex items-center gap-2 flex-1` → wrap with `flex-col sm:flex-row`
+
+### `components/SignInForm.tsx`
+- Heading: `text-2xl` → `text-xl sm:text-2xl`
+
+## Navigation Strategy Choice
+**Approach A — Horizontal scroll nav (simpler, no JS):**
+- Wrap nav in `overflow-x-auto` scrollable container
+- Use `text-xs sm:text-sm` for nav links
+- Use `gap-2 sm:gap-3` between links
+- Remove `·` separators, use `flex gap` instead
+- Pros: No new components, no JS state, fast
+
+**Approach B — Bottom navigation bar on mobile:**
+- Show bottom bar with icons on mobile, hide top nav
+- Pros: Native mobile UX
+- Cons: More complex, needs icons per page, new component
+
+**Preferred: Approach A** — Keep it simple for MVP. Scrollable nav with smaller text and reduced gaps on mobile.
 
 ## Most Similar Existing Feature
-- **Family tabs**: `app/family/page.tsx` (already shows all users' todos — just add tabs)
-- **Recurring + stars schema**: `convex/todos.ts` + `convex/schema.ts` (modify existing)
-- **Quests agent + page**: `convex/goals.ts` + `app/goals/page.tsx` (new table + scheduled agent + page)
-- **Star evaluator agent**: `convex/context.ts` + `lifelup-agent/coach-poll.mjs` (polling agent pattern)
+- All existing pages follow the same header/nav pattern — fix it once per page
+- `app/family/page.tsx` already uses `overflow-x-auto` for tabs — use same pattern for nav
 
 ## Out of Scope
-- No leaderboard between users (stars are personal, not competitive)
-- No star redemption or rewards — just accumulation for now
-- No custom quest creation by users — quests are AI-generated only
-- No push notifications when quests complete
-- No historical star tracking per day — just a running total
-- No difficulty levels or categories on recurring todos
+- No hamburger menu (Approach B rejected for MVP simplicity)
+- No dark mode
+- No animation or transition changes
+- No layout restructuring — same visual hierarchy, just responsive
+- No changes to Convex backend
+- No changes to agent scripts
 
 ## Additional Context
-- Star values: simple 1–5 scale. 1 = trivial (take a vitamin), 5 = hard (write a report)
-- The evaluator agent should run on a short poll interval (e.g., every 5 minutes) to quickly assign star values to newly created todos
-- Quest generation: weekly on Monday morning. Agent looks at recurring todos + recent one-off todos to propose 2–3 quests per user, each requiring 3–5 specific task completions
-- Quest completion detection: when a todo is toggled complete, check if its text matches any open questTodo for that user — if so, mark questTodo complete and check if the whole quest is done
-- Keep the star display simple: a ⭐ badge on the todo card showing the value, and a total ⭐ count in the nav header
+- Target breakpoint: `sm` = 640px (Tailwind default). Mobile = <640px.
+- Test viewport: 375px wide (iPhone SE / most Android phones)
+- The app is used by a small family — mobile use is real and current
+- Navigation has 7 items: Accueil · Coach · Objectifs · Famille · Contexte · Récurrents · Quêtes — plus ⭐ total and Sign Out button
+- All pages are "use client" components (hooks used everywhere)

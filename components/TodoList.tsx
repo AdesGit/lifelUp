@@ -54,7 +54,7 @@ export function TodoList() {
       </div>
 
       <form onSubmit={handleSubmit} className="mb-4 space-y-2">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -64,7 +64,7 @@ export function TodoList() {
           <button
             type="submit"
             disabled={!text.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-lg transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-lg transition-colors"
           >
             Add
           </button>
@@ -86,7 +86,7 @@ export function TodoList() {
           </button>
 
           {isRecurring && (
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex flex-wrap items-center gap-2 flex-1">
               <select
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value as "daily" | "weekly")}

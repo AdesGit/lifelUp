@@ -64,44 +64,44 @@ export default function RecurringTodosPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">LifeLup</h1>
-          <nav className="flex gap-2 text-sm flex-wrap">
-            <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              My todos
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Family
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Coach
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Goals
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Context
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">Recurring</span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Quests
-            </Link>
-          </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm overflow-x-auto mx-2 min-w-0">
+          <Link href="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            My todos
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/family" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Family
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/coach" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Coach
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/goals" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Goals
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/context" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Context
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">Recurring</span>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Quests
+          </Link>
+        </nav>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <PushNotificationButton />
           <SignOutButton />
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-8 pt-10 gap-6">
+      <div className="flex flex-1 flex-col max-w-2xl w-full mx-auto p-4 sm:p-8 pt-6 sm:pt-10 gap-4 sm:gap-6">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recurring Tasks</h2>
@@ -122,7 +122,7 @@ export default function RecurringTodosPage() {
         {showForm && (
           <form
             onSubmit={handleCreate}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 space-y-4"
+            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5 space-y-4"
           >
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">New recurring task</h3>
             <input
@@ -132,7 +132,7 @@ export default function RecurringTodosPage() {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               autoFocus
             />
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <div className="flex gap-2">
                 <button
                   type="button"
