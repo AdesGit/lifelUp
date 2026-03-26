@@ -159,8 +159,8 @@ http.route({
       ctx.runQuery(internal.recurringTodos.getUnevaluated),
     ]);
     const result = [
-      ...todos.map((t) => ({ type: "todo" as const, id: t._id, text: t.text })),
-      ...recurring.map((t) => ({ type: "recurring" as const, id: t._id, text: t.text })),
+      ...todos.map((t) => ({ type: "todo" as const, id: t._id, text: t.text, category: t.category ?? "other" })),
+      ...recurring.map((t) => ({ type: "recurring" as const, id: t._id, text: t.text, category: "other" as const })),
     ];
     return Response.json(result);
   }),

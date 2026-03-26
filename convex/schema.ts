@@ -11,6 +11,8 @@ const schema = defineSchema({
     image: v.optional(v.string()),
     isAnonymous: v.optional(v.boolean()),
     totalStars: v.optional(v.number()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
   }).index("email", ["email"]),
   todos: defineTable({
     userId: v.id("users"),
@@ -23,6 +25,14 @@ const schema = defineSchema({
     frequency: v.optional(v.union(v.literal("daily"), v.literal("weekly"))),
     scheduledTime: v.optional(v.string()), // "HH:MM" UTC 24h
     nextDueAt: v.optional(v.number()),     // timestamp of next reset/notification
+    category: v.optional(v.union(
+      v.literal("household"),
+      v.literal("family_help"),
+      v.literal("training"),
+      v.literal("school_work"),
+      v.literal("leisure"),
+      v.literal("other"),
+    )),
   })
     .index("by_user", ["userId"])
     .index("by_next_due", ["nextDueAt"]),

@@ -12,6 +12,17 @@ function initials(email: string) {
   return email.split("@")[0].slice(0, 2).toUpperCase();
 }
 
+function computeLevel(totalStars: number): number {
+  return Math.floor(Math.sqrt(totalStars / 5)) + 1;
+}
+
+function displayName(user: { firstName?: string | null; lastName?: string | null; email?: string | null } | null | undefined): string {
+  if (!user) return "Unknown";
+  if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+  if (user.firstName) return user.firstName;
+  return (user.email ?? "").split("@")[0];
+}
+
 const COLORS = [
   "bg-blue-500",
   "bg-purple-500",
@@ -117,6 +128,9 @@ export default function FamilyPage() {
                 {users.map(({ email, todos: userTodos }, i) => {
                   const done = userTodos.filter((t) => t.completed).length;
                   const color = COLORS[i % COLORS.length];
+                  const userObj = userTodos[0]?.user;
+                  const userStars = userObj?.totalStars ?? 0;
+                  const userLevel = computeLevel(userStars);
                   return (
                     <button
                       key={email}
@@ -130,7 +144,8 @@ export default function FamilyPage() {
                       <div className={`w-5 h-5 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
                         {initials(email)}
                       </div>
-                      <span className="max-w-[80px] sm:max-w-none truncate">{email.split("@")[0]}</span>
+                      <span className="max-w-[80px] sm:max-w-none truncate">{displayName(userObj ?? { email })}</span>
+                      <span className="text-xs text-gray-400">Lv.{userLevel}</span>
                       <span className="text-xs text-gray-400">{done}/{userTodos.length}</span>
                     </button>
                   );
@@ -145,7 +160,12 @@ export default function FamilyPage() {
                       {initials(selectedUser.email)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{selectedUser.email}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {displayName(selectedUser.todos[0]?.user ?? { email: selectedUser.email })}
+                      </p>
+                      <p className="text-xs text-yellow-500 font-medium">
+                        Lv.{computeLevel(selectedUser.todos[0]?.user?.totalStars ?? 0)} ⭐{selectedUser.todos[0]?.user?.totalStars ?? 0}
+                      </p>
                     </div>
                     <span className="text-xs text-gray-400">
                       {selectedUser.todos.filter((t) => t.completed).length}/{selectedUser.todos.length} done

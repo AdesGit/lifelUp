@@ -53,8 +53,16 @@ export const create = mutation({
     isRecurring: v.optional(v.boolean()),
     frequency: v.optional(v.union(v.literal("daily"), v.literal("weekly"))),
     scheduledTime: v.optional(v.string()),
+    category: v.optional(v.union(
+      v.literal("household"),
+      v.literal("family_help"),
+      v.literal("training"),
+      v.literal("school_work"),
+      v.literal("leisure"),
+      v.literal("other"),
+    )),
   },
-  handler: async (ctx, { text, isRecurring, frequency, scheduledTime }) => {
+  handler: async (ctx, { text, isRecurring, frequency, scheduledTime, category }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -71,6 +79,7 @@ export const create = mutation({
       frequency: frequency ?? undefined,
       scheduledTime: scheduledTime ?? undefined,
       nextDueAt,
+      category: category ?? "other",
     });
   },
 });

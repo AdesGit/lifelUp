@@ -10,6 +10,16 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { PushNotificationButton } from "@/components/PushNotificationButton";
 
 type Todo = Doc<"todos">;
+type TodoCategory = "household" | "family_help" | "training" | "school_work" | "leisure" | "other";
+
+const CATEGORY_LABELS: Record<TodoCategory, string> = {
+  household: "Tâches ménagères",
+  family_help: "Aide à la famille",
+  training: "Entraînement",
+  school_work: "École / travail",
+  leisure: "Loisirs",
+  other: "Autre",
+};
 
 function formatNextDue(nextDueAt: number): string {
   const diff = nextDueAt - Date.now();
@@ -32,6 +42,7 @@ export default function RecurringTodosPage() {
   const [newText, setNewText] = useState("");
   const [frequency, setFrequency] = useState<"daily" | "weekly">("daily");
   const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [category, setCategory] = useState<TodoCategory>("other");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -54,9 +65,10 @@ export default function RecurringTodosPage() {
     if (!trimmed) return;
     setSaving(true);
     try {
-      await create({ text: trimmed, isRecurring: true, frequency, scheduledTime });
+      await create({ text: trimmed, isRecurring: true, frequency, scheduledTime, category });
       setNewText("");
       setShowForm(false);
+      setCategory("other");
     } finally {
       setSaving(false);
     }
@@ -166,6 +178,15 @@ export default function RecurringTodosPage() {
                 />
                 <span className="text-xs text-gray-400">UTC</span>
               </div>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as TodoCategory)}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {(Object.keys(CATEGORY_LABELS) as TodoCategory[]).map((key) => (
+                  <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-2">
               <button

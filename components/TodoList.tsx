@@ -5,6 +5,17 @@ import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 
+type TodoCategory = "household" | "family_help" | "training" | "school_work" | "leisure" | "other";
+
+const CATEGORY_LABELS: Record<TodoCategory, string> = {
+  household: "Tâches ménagères",
+  family_help: "Aide à la famille",
+  training: "Entraînement",
+  school_work: "École / travail",
+  leisure: "Loisirs",
+  other: "Autre",
+};
+
 function formatNextDue(nextDueAt: number): string {
   const diff = nextDueAt - Date.now();
   const hours = Math.floor(diff / 3_600_000);
@@ -26,6 +37,7 @@ export function TodoList() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<"daily" | "weekly">("daily");
   const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [category, setCategory] = useState<TodoCategory>("other");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,9 +48,11 @@ export function TodoList() {
       isRecurring: isRecurring || undefined,
       frequency: isRecurring ? frequency : undefined,
       scheduledTime: isRecurring ? scheduledTime : undefined,
+      category,
     });
     setText("");
     setIsRecurring(false);
+    setCategory("other");
   }
 
   const done = todos?.filter((t: Doc<"todos">) => t.completed).length ?? 0;
@@ -104,6 +118,16 @@ export function TodoList() {
               <span className="text-xs text-gray-400">UTC</span>
             </div>
           )}
+
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as TodoCategory)}
+            className="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {(Object.keys(CATEGORY_LABELS) as TodoCategory[]).map((key) => (
+              <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
+            ))}
+          </select>
         </div>
       </form>
 
