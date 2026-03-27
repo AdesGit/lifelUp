@@ -8,14 +8,13 @@ import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
 import { PushNotificationButton } from "@/components/PushNotificationButton";
 
-const AGENT_META: Record<string, { schedule: string; description: string }> = {
-  "coach":           { schedule: "Toutes les 5 min", description: "Répond aux sessions de coaching en attente" },
-  "star-evaluator":  { schedule: "Toutes les 5 min", description: "Attribue des étoiles aux tâches non évaluées" },
-  "image-agent":     { schedule: "Quotidien à 02:00 UTC", description: "Compresse et décrit les images uploadées" },
-  "goals-daily":     { schedule: "Quotidien à 00:00 UTC", description: "Extrait les objectifs depuis l'historique coach" },
-  "context-weekly":  { schedule: "Dimanche à 02:00 UTC", description: "Extrait les entrées de contexte famille" },
-  "recurring-daily": { schedule: "Quotidien à 06:00 UTC", description: "Spawn les todos récurrents arrivés à échéance" },
-  "quests-weekly":   { schedule: "Lundi à 07:00 UTC", description: "Génère les quêtes hebdomadaires" },
+const AGENT_META: Record<string, { schedule: string; description: string; type: "vps" | "cloud" }> = {
+  "coach":           { schedule: "Toutes les 5 min (VPS)", description: "Répond aux sessions de coaching en attente", type: "vps" },
+  "coach-remote":    { schedule: "Toutes les heures (cloud)", description: "Répond aux sessions de coaching (agent cloud CCR)", type: "cloud" },
+  "star-evaluator":  { schedule: "Toutes les 5 min (VPS)", description: "Attribue des étoiles aux tâches non évaluées", type: "vps" },
+  "image-agent":     { schedule: "Quotidien à 02:00 UTC (VPS)", description: "Compresse et décrit les images uploadées", type: "vps" },
+  "goals-daily":     { schedule: "Quotidien à 00:00 UTC (cloud)", description: "Extrait les objectifs depuis l'historique coach", type: "cloud" },
+  "context-weekly":  { schedule: "Dimanche à 02:00 UTC (cloud)", description: "Extrait les entrées de contexte famille", type: "cloud" },
 };
 
 function timeAgo(ts: number): string {
@@ -143,6 +142,9 @@ export default function AgentsPage() {
                       {s && <StatusDot status={s.lastStatus} />}
                       {!s && <span className="inline-block w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />}
                       <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{name}</p>
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${meta.type === "cloud" ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"}`}>
+                        {meta.type === "cloud" ? "cloud" : "vps"}
+                      </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">{meta.schedule}</p>
                   </div>
