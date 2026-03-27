@@ -12,13 +12,13 @@ import { PushNotificationButton } from "@/components/PushNotificationButton";
 type Todo = Doc<"todos">;
 type TodoCategory = "household" | "family_help" | "training" | "school_work" | "leisure" | "other";
 
-const CATEGORY_LABELS: Record<TodoCategory, string> = {
-  household: "Tâches ménagères",
-  family_help: "Aide à la famille",
-  training: "Entraînement",
-  school_work: "École / travail",
-  leisure: "Loisirs",
-  other: "Autre",
+const CATEGORY_META: Record<TodoCategory, { label: string; stars: string; color: string; dot: string }> = {
+  household:   { label: "Tâches ménagères", stars: "1-3⭐", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",   dot: "bg-blue-500" },
+  family_help: { label: "Aide à la famille", stars: "2-4⭐", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",   dot: "bg-pink-500" },
+  training:    { label: "Entraînement",       stars: "2-5⭐", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", dot: "bg-orange-500" },
+  school_work: { label: "École / travail",    stars: "2-5⭐", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300", dot: "bg-purple-500" },
+  leisure:     { label: "Loisirs",            stars: "1-2⭐", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",   dot: "bg-teal-500" },
+  other:       { label: "Autre",              stars: "1-3⭐", color: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",       dot: "bg-gray-400" },
 };
 
 function formatNextDue(nextDueAt: number): string {
@@ -183,8 +183,8 @@ export default function RecurringTodosPage() {
                 onChange={(e) => setCategory(e.target.value as TodoCategory)}
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {(Object.keys(CATEGORY_LABELS) as TodoCategory[]).map((key) => (
-                  <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
+                {(Object.keys(CATEGORY_META) as TodoCategory[]).map((key) => (
+                  <option key={key} value={key}>{CATEGORY_META[key].label} · {CATEGORY_META[key].stars}</option>
                 ))}
               </select>
             </div>
@@ -224,7 +224,10 @@ export default function RecurringTodosPage() {
         )}
 
         <ul className="space-y-2">
-          {recurringTodos.map((t: Todo) => (
+          {recurringTodos.map((t: Todo) => {
+            const cat = (t.category ?? "other") as TodoCategory;
+            const meta = CATEGORY_META[cat] ?? CATEGORY_META.other;
+            return (
             <li
               key={t._id}
               className="flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
@@ -242,15 +245,22 @@ export default function RecurringTodosPage() {
                 <p className={`text-sm ${t.completed ? "line-through text-gray-400" : "text-gray-800 dark:text-gray-200"}`}>
                   {t.text}
                 </p>
-                <p className="text-xs text-blue-400 mt-0.5">
-                  {t.frequency === "daily" ? "Daily" : "Weekly"} · {t.scheduledTime} UTC
-                  {t.completed && t.nextDueAt != null && (
-                    <span className="text-gray-400"> · resets in {formatNextDue(t.nextDueAt)}</span>
-                  )}
-                </p>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${meta.color}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                    {meta.label}
+                    <span className="opacity-70">· {meta.stars}</span>
+                  </span>
+                  <span className="text-xs text-blue-400">
+                    {t.frequency === "daily" ? "Quotidien" : "Hebdo"} · {t.scheduledTime} UTC
+                    {t.completed && t.nextDueAt != null && (
+                      <span className="text-gray-400"> · reset dans {formatNextDue(t.nextDueAt)}</span>
+                    )}
+                  </span>
+                </div>
               </div>
               <span className="text-xs text-yellow-500 font-medium flex-shrink-0">
-                {t.starValue != null ? `⭐${t.starValue}` : "·"}
+                {t.starValue != null ? `⭐${t.starValue}` : <span className="text-gray-300 dark:text-gray-600 text-xs italic">eval…</span>}
               </span>
               <button
                 onClick={() => remove({ id: t._id as Id<"todos"> })}
@@ -262,7 +272,8 @@ export default function RecurringTodosPage() {
                 </svg>
               </button>
             </li>
-          ))}
+          );
+          })}
         </ul>
       </div>
     </main>
