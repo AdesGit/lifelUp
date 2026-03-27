@@ -161,32 +161,42 @@ AGENT_SECRET=de5430144a6a5bebe12f68b99880fff0a761a37dbf7917ca8eb2f70c9416aec4
 All agent endpoints: `https://convex.aidigitalassistant.cloud/agent/v1/*`
 Protected by: `Authorization: Bearer de5430144a6a5bebe12f68b99880fff0a761a37dbf7917ca8eb2f70c9416aec4`
 
+### Standard Agent Loop (ALL agents must follow this)
+
+```
+GET context from Convex  →  claude --print "instructions + context"  →  POST results to Convex
+```
+
+- **No Anthropic API key** — all agents use `claude --print` (Claude Code CLI, already auth on VPS)
+- **Instructions**: hardcoded in the agent script OR fetched from a Convex endpoint
+- **Context**: always from Convex HTTP endpoints (live data)
+- **Template**: `examples/agent-template.mjs` — copy for every new agent
+
 ### Current agents
 
-| Agent | Runner | Schedule | Model | Endpoints used |
-|-------|--------|----------|-------|----------------|
-| Coach replies | PM2 polling | Every 15s | claude-haiku-4-5 | GET /pending · POST /reply |
-| Star evaluator | PM2 polling | Every 5min | claude-haiku-4-5 | GET /todos-unevaluated · POST /todos-star |
-| Push notifications | PM2 polling | Every 1min | *(no LLM)* | GET /notify-due · POST /notify-reset |
-| Goals extraction | Claude Code `/schedule` | Daily 00:00 UTC | claude-sonnet-4-6 | GET /goals-work · POST /goals-save |
-| Context extraction | Claude Code `/schedule` | Sunday 02:00 UTC | claude-sonnet-4-6 | GET /context · POST /context-save |
-| Recurring reset | Claude Code `/schedule` | Daily 06:00 UTC | *(no LLM)* | GET /recurring-work · POST /recurring-spawn |
-| Quest generation | Claude Code `/schedule` | Monday 07:00 UTC | claude-sonnet-4-6 | GET /quests-work · POST /quests-save |
+| Agent | Runner | Cadence | Uses LLM | Endpoints |
+|-------|--------|---------|----------|-----------|
+| `lifelup-coach` | PM2 | Every 5 min | ✓ claude --print | GET /pending · POST /reply |
+| `lifelup-star-evaluator` | PM2 | Every 5 min | ✓ claude --print | GET /todos-unevaluated · POST /todos-star |
+| `lifelup-image-agent` | PM2 | Daily 02:00 UTC | ✓ claude --print (multimodal) | GET /uploads-unprocessed · POST /uploads-process |
+| `lifelup-notif` | PM2 | Every 1 min | ✗ | GET /notify-due · POST /notify-reset |
+| goals-daily | `/schedule` | Daily 00:00 UTC | ✓ Claude session | GET /goals-work · POST /goals-save |
+| context-weekly | `/schedule` | Sunday 02:00 UTC | ✓ Claude session | GET /context · POST /context-save |
+| recurring-daily | `/schedule` | Daily 06:00 UTC | ✗ | GET /recurring-work · POST /recurring-spawn |
+| quests-weekly | `/schedule` | Monday 07:00 UTC | ✓ Claude session | GET /quests-work · POST /quests-save |
 
-### Two runner types in use
+### Runner types
 
-**PM2 polling** (for time-critical or always-on work):
+**PM2 polling** (cadence < 1 hour, always-on):
 - Lives in `/home/claude/dev/lifelup-agent/`
-- Managed via `ecosystem.config.cjs` — start with `pm2 start ecosystem.config.cjs`
+- Managed via `ecosystem.config.cjs` — `AGENT_SECRET` only, never `ANTHROPIC_API_KEY`
 - Never use `--update-env` — silently wipes env vars. Use delete + start cycle.
 - Logs: `pm2 logs <name> --lines 30 --nostream`
 
-**Claude Code `/schedule`** (for periodic batch jobs — preferred for new agents):
-- Uses Claude Code's built-in RemoteTrigger (cron) — no separate process to manage
-- Runs a Claude Code session on a schedule; the session calls the HTTP endpoints directly
+**Claude Code `/schedule`** (cadence ≥ 1 hour, preferred for new batch agents):
+- RemoteTrigger — no separate process to manage, no credential rotation
 - Set up via `/schedule` skill in Claude Code
-- Current schedules managed at: see RemoteTriggers section below
-- Advantage: no always-on process, no credential management, Claude can reason about failures
+- Current schedules: see RemoteTriggers section below
 
 ### Claude Code async patterns
 

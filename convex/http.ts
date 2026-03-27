@@ -248,6 +248,17 @@ http.route({
   }),
 });
 
+// POST /agent/v1/uploads-reset-processed — admin: clear imageProcessed flags for reprocessing
+http.route({
+  path: "/agent/v1/uploads-reset-processed",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const result = await ctx.runMutation(internal.uploads.resetAllImageProcessed);
+    return Response.json(result);
+  }),
+});
+
 // GET /agent/v1/uploads-unprocessed — image uploads not yet described/compressed
 http.route({
   path: "/agent/v1/uploads-unprocessed",

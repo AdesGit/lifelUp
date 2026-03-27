@@ -124,6 +124,19 @@ export const processImage = internalMutation({
   },
 });
 
+// Reset imageProcessed flag so agent re-processes (admin/debug use)
+export const resetAllImageProcessed = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("uploads").collect();
+    const images = all.filter((u) => u.mimeType.startsWith("image/") && u.imageProcessed);
+    for (const u of images) {
+      await ctx.db.patch(u._id, { imageProcessed: undefined, description: undefined });
+    }
+    return { reset: images.length };
+  },
+});
+
 // ─── Public user-facing functions ─────────────────────────────────────────────
 
 // Delete upload: removes from Convex storage AND the uploads table
