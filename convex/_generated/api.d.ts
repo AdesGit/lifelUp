@@ -9,6 +9,7 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as agentRuns from "../agentRuns.js";
 import type * as auth from "../auth.js";
 import type * as coach from "../coach.js";
 import type * as context from "../context.js";
@@ -28,6 +29,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  agentRuns: typeof agentRuns;
   auth: typeof auth;
   coach: typeof coach;
   context: typeof context;

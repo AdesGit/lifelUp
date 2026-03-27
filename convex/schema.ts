@@ -142,6 +142,18 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_todo", ["todoId"])
     .index("by_user_uploaded", ["userId", "uploadedAt"]),
+  agentRuns: defineTable({
+    agentName: v.string(),
+    runAt: v.number(),
+    durationMs: v.number(),
+    itemsProcessed: v.number(),
+    promptChars: v.number(),     // prompt character count (tokens ≈ chars/4)
+    outputChars: v.number(),     // output character count
+    status: v.union(v.literal("ok"), v.literal("error"), v.literal("idle")),
+    errorMessage: v.optional(v.string()),
+  })
+    .index("by_agent", ["agentName"])
+    .index("by_run_at", ["runAt"]),
 });
 
 export default schema;

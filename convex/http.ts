@@ -298,4 +298,16 @@ http.route({
   }),
 });
 
+// POST /agent/v1/agent-run-log — agents log their run stats here
+http.route({
+  path: "/agent/v1/agent-run-log",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const body = await req.json();
+    await ctx.runMutation(internal.agentRuns.logRun, body);
+    return Response.json({ ok: true });
+  }),
+});
+
 export default http;
