@@ -134,9 +134,10 @@ const schema = defineSchema({
     mimeType: v.string(),
     size: v.number(),                        // bytes
     storageId: v.id("_storage"),
-    description: v.optional(v.string()),     // filled by future agent
-    summary: v.optional(v.string()),         // filled by future agent
-    links: v.optional(v.array(v.string())),  // filled by future agent
+    description: v.optional(v.string()),     // filled by image agent
+    summary: v.optional(v.string()),         // filled by image agent
+    links: v.optional(v.array(v.string())),  // filled by image agent
+    imageProcessed: v.optional(v.boolean()), // true after agent compressed + described
   })
     .index("by_user", ["userId"])
     .index("by_todo", ["todoId"])

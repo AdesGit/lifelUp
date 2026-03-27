@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 // Step 1 of upload flow: returns a short-lived POST URL for direct file upload
@@ -75,6 +75,56 @@ export const listByTodo = query({
     );
   },
 });
+
+// ─── Agent-only internal functions ───────────────────────────────────────────
+
+// Returns image uploads not yet processed (no description / imageProcessed != true)
+export const listUnprocessedImages = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("uploads").collect();
+    const images = all.filter(
+      (u) => u.mimeType.startsWith("image/") && !u.imageProcessed
+    );
+    return Promise.all(
+      images.map(async (u) => ({
+        _id: u._id,
+        filename: u.filename,
+        mimeType: u.mimeType,
+        size: u.size,
+        url: await ctx.storage.getUrl(u.storageId),
+      }))
+    );
+  },
+});
+
+// Returns a short-lived upload URL for the agent to store compressed images
+export const generateUploadUrlInternal = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Replace original with agent-compressed version; store description
+export const processImage = internalMutation({
+  args: {
+    id: v.id("uploads"),
+    newStorageId: v.id("_storage"),
+    description: v.string(),
+    size: v.number(),
+  },
+  handler: async (ctx, { id, newStorageId, description, size }) => {
+    const upload = await ctx.db.get(id);
+    if (!upload) throw new Error("Upload not found");
+    if (upload.imageProcessed) return; // idempotent
+    const oldStorageId = upload.storageId;
+    await ctx.db.patch(id, { storageId: newStorageId, size, description, imageProcessed: true });
+    await ctx.storage.delete(oldStorageId);
+  },
+});
+
+// ─── Public user-facing functions ─────────────────────────────────────────────
 
 // Delete upload: removes from Convex storage AND the uploads table
 export const remove = mutation({

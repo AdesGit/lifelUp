@@ -248,4 +248,43 @@ http.route({
   }),
 });
 
+// GET /agent/v1/uploads-unprocessed — image uploads not yet described/compressed
+http.route({
+  path: "/agent/v1/uploads-unprocessed",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const images = await ctx.runQuery(internal.uploads.listUnprocessedImages);
+    return Response.json(images);
+  }),
+});
+
+// POST /agent/v1/uploads-process — receive compressed image + description from agent
+// Body: { id, description, imageBase64, mimeType, size }
+http.route({
+  path: "/agent/v1/uploads-process",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { id, description, imageBase64, mimeType, size } = await req.json();
+    // Get a fresh upload URL for the compressed image
+    const uploadUrl = await ctx.runMutation(internal.uploads.generateUploadUrlInternal);
+    // Decode base64 → binary
+    const binary = atob(imageBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    // Upload to Convex storage
+    const uploadRes = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": mimeType },
+      body: bytes,
+    });
+    if (!uploadRes.ok) return new Response("Storage upload failed", { status: 500 });
+    const { storageId: newStorageId } = await uploadRes.json();
+    // Replace original, store description
+    await ctx.runMutation(internal.uploads.processImage, { id, newStorageId, description, size });
+    return Response.json({ ok: true });
+  }),
+});
+
 export default http;
