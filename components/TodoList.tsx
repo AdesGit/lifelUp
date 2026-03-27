@@ -46,6 +46,45 @@ function AttachmentBadge({ todoId, onClick }: { todoId: Id<"todos">; onClick: ()
   );
 }
 
+// Compress an image file using Canvas API to fit within maxSizeMB
+async function compressImage(file: File, maxSizeMB = 10): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const MAX_BYTES = maxSizeMB * 1024 * 1024;
+      const MAX_DIM = 2560;
+      let { naturalWidth: w, naturalHeight: h } = img;
+      if (w > MAX_DIM || h > MAX_DIM) {
+        const r = Math.min(MAX_DIM / w, MAX_DIM / h);
+        w = Math.round(w * r);
+        h = Math.round(h * r);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas non supporté")); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      const tryQuality = (q: number) => {
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Compression échouée")); return; }
+          if (blob.size <= MAX_BYTES || q <= 0.2) {
+            const name = file.name.replace(/\.[^.]+$/, ".jpg");
+            resolve(new File([blob], name, { type: "image/jpeg" }));
+          } else {
+            tryQuality(Math.round((q - 0.15) * 100) / 100);
+          }
+        }, "image/jpeg", q);
+      };
+      tryQuality(0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Image invalide")); };
+    img.src = objectUrl;
+  });
+}
+
 // Modal: shows existing attachments for a todo + upload button
 function AttachmentModal({ todoId, onClose }: { todoId: Id<"todos">; onClose: () => void }) {
   const attachments = useQuery(api.uploads.listByTodo, { todoId });
@@ -57,18 +96,25 @@ function AttachmentModal({ todoId, onClose }: { todoId: Id<"todos">; onClose: ()
   const [error, setError] = useState<string | null>(null);
 
   const MAX_SIZE = 10 * 1024 * 1024;
+  const COMPRESS_THRESHOLD = 5 * 1024 * 1024;
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > MAX_SIZE) {
-      setError("Fichier trop volumineux (max 10 Mo)");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
+    const raw = e.target.files?.[0];
+    if (!raw) return;
     setError(null);
     setUploading(true);
+    let file = raw;
     try {
+      // Compress images above 5 MB client-side before upload
+      if (raw.type.startsWith("image/") && raw.size > COMPRESS_THRESHOLD) {
+        file = await compressImage(raw);
+      }
+      if (file.size > MAX_SIZE) {
+        setError("Fichier trop volumineux même après compression (max 10 Mo)");
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
       const uploadUrl = await generateUploadUrl();
       const res = await fetch(uploadUrl, {
         method: "POST",
