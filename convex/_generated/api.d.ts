@@ -17,6 +17,7 @@ import type * as http from "../http.js";
 import type * as quests from "../quests.js";
 import type * as recurringTodos from "../recurringTodos.js";
 import type * as todos from "../todos.js";
+import type * as uploads from "../uploads.js";
 import type * as users from "../users.js";
 
 import type {
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   quests: typeof quests;
   recurringTodos: typeof recurringTodos;
   todos: typeof todos;
+  uploads: typeof uploads;
   users: typeof users;
 }>;
 

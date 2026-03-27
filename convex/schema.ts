@@ -126,6 +126,21 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_fingerprint", ["userId", "fingerprint"]),
+  uploads: defineTable({
+    userId: v.id("users"),
+    uploadedAt: v.number(),
+    todoId: v.optional(v.id("todos")),
+    filename: v.string(),
+    mimeType: v.string(),
+    size: v.number(),                        // bytes
+    storageId: v.id("_storage"),
+    description: v.optional(v.string()),     // filled by future agent
+    summary: v.optional(v.string()),         // filled by future agent
+    links: v.optional(v.array(v.string())),  // filled by future agent
+  })
+    .index("by_user", ["userId"])
+    .index("by_todo", ["todoId"])
+    .index("by_user_uploaded", ["userId", "uploadedAt"]),
 });
 
 export default schema;

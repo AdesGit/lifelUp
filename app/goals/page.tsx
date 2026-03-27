@@ -149,6 +149,10 @@ export default function GoalsPage() {
             Recurring
           </Link>
           <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/fichiers" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Fichiers
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
           <Link href="/quests" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
             Quests
           </Link>

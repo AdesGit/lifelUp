@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 
 type TodoCategory = "household" | "family_help" | "training" | "school_work" | "leisure" | "other";
@@ -27,6 +27,155 @@ function formatNextDue(nextDueAt: number): string {
   return `${days}d`;
 }
 
+// Sub-component: shows 📎 badge with attachment count (isolated to avoid conditional hook calls)
+function AttachmentBadge({ todoId, onClick }: { todoId: Id<"todos">; onClick: () => void }) {
+  const attachments = useQuery(api.uploads.listByTodo, { todoId });
+  const count = attachments?.length ?? 0;
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-0.5 text-xs transition-colors flex-shrink-0 ${
+        count > 0
+          ? "text-blue-500 hover:text-blue-400"
+          : "text-gray-300 dark:text-gray-600 hover:text-gray-500"
+      }`}
+      aria-label="Pièces jointes"
+    >
+      📎{count > 0 && <span className="font-medium">{count}</span>}
+    </button>
+  );
+}
+
+// Modal: shows existing attachments for a todo + upload button
+function AttachmentModal({ todoId, onClose }: { todoId: Id<"todos">; onClose: () => void }) {
+  const attachments = useQuery(api.uploads.listByTodo, { todoId });
+  const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
+  const confirmUpload = useMutation(api.uploads.confirmUpload);
+  const removeUpload = useMutation(api.uploads.remove);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const MAX_SIZE = 10 * 1024 * 1024;
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_SIZE) {
+      setError("Fichier trop volumineux (max 10 Mo)");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setError(null);
+    setUploading(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!res.ok) throw new Error("Upload échoué");
+      const { storageId } = await res.json();
+      await confirmUpload({
+        storageId,
+        filename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        size: file.size,
+        todoId,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white dark:bg-gray-900 p-5 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Pièces jointes</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {attachments === undefined && (
+          <div className="flex justify-center py-4">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          </div>
+        )}
+
+        {attachments?.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">Aucune pièce jointe</p>
+        )}
+
+        {(attachments?.length ?? 0) > 0 && (
+          <ul className="space-y-2 mb-4">
+            {attachments?.map((a) => (
+              <li key={a._id} className="flex items-center gap-2 group">
+                {a.mimeType.startsWith("image/") && a.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.url} alt={a.filename} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm flex-shrink-0">
+                    {a.mimeType === "application/pdf" ? "📄" : "📎"}
+                  </div>
+                )}
+                <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">{a.filename}</span>
+                {a.url && (
+                  <a
+                    href={a.url}
+                    download={a.filename}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-blue-500 flex-shrink-0"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </a>
+                )}
+                <button
+                  onClick={() => removeUpload({ id: a._id as Id<"uploads"> })}
+                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all flex-shrink-0"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          id="attach-file-input"
+          onChange={handleFile}
+        />
+        <label
+          htmlFor="attach-file-input"
+          className={`w-full flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+        >
+          {uploading ? "Upload en cours…" : "📎 Ajouter un fichier"}
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export function TodoList() {
   const todos = useQuery(api.todos.list);
   const create = useMutation(api.todos.create);
@@ -38,6 +187,7 @@ export function TodoList() {
   const [frequency, setFrequency] = useState<"daily" | "weekly">("daily");
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [category, setCategory] = useState<TodoCategory>("other");
+  const [attachTodoId, setAttachTodoId] = useState<Id<"todos"> | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,7 +234,7 @@ export function TodoList() {
           </button>
         </div>
 
-        {/* Recurring toggle */}
+        {/* Recurring toggle + category */}
         <div className="flex flex-wrap items-center gap-2 px-1">
           <button
             type="button"
@@ -119,7 +269,6 @@ export function TodoList() {
             </>
           )}
 
-          {/* Category selector with color dot */}
           <div className="flex items-center gap-1.5 ml-auto">
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${CATEGORY_META[category].dot}`} />
             <select
@@ -178,7 +327,6 @@ export function TodoList() {
                   {todo.text}
                 </span>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                  {/* Category badge */}
                   <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${meta.color}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
                     {meta.label}
@@ -198,6 +346,11 @@ export function TodoList() {
                 </div>
               </div>
 
+              <AttachmentBadge
+                todoId={todo._id as Id<"todos">}
+                onClick={() => setAttachTodoId(todo._id as Id<"todos">)}
+              />
+
               <span className="text-xs text-yellow-500 font-medium flex-shrink-0">
                 {todo.starValue != null ? `⭐${todo.starValue}` : <span className="text-gray-300 dark:text-gray-600 text-xs italic">eval…</span>}
               </span>
@@ -215,6 +368,13 @@ export function TodoList() {
           );
         })}
       </ul>
+
+      {attachTodoId && (
+        <AttachmentModal
+          todoId={attachTodoId}
+          onClose={() => setAttachTodoId(null)}
+        />
+      )}
     </div>
   );
 }
