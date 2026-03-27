@@ -172,62 +172,87 @@ export default function FichiersPage() {
           </div>
         )}
 
-        <ul className="space-y-2">
-          {filtered.map((upload) => (
-            <li
-              key={upload._id}
-              className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group"
-            >
-              {upload.mimeType.startsWith("image/") && upload.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={upload.url}
-                  alt={upload.filename}
-                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl flex-shrink-0">
-                  {fileIcon(upload.mimeType)}
-                </div>
-              )}
-
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{upload.filename}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {formatSize(upload.size)} · {new Date(upload.uploadedAt).toLocaleDateString("fr-FR")}
-                  {upload.todoId && <span className="ml-1">· tâche liée</span>}
-                </p>
-                {upload.description && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{upload.description}</p>
-                )}
-              </div>
-
-              {upload.url && (
-                <a
-                  href={upload.url}
-                  download={upload.filename}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-blue-500 transition-colors flex-shrink-0"
-                  aria-label="Télécharger"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </a>
-              )}
-
-              <button
-                onClick={() => removeUpload({ id: upload._id as Id<"uploads"> })}
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all flex-shrink-0"
-                aria-label="Supprimer"
+        <ul className="space-y-3">
+          {filtered.map((upload) => {
+            const isImage = upload.mimeType.startsWith("image/");
+            const uploadedAt = new Date(upload.uploadedAt);
+            const dateStr = uploadedAt.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+            const timeStr = uploadedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <li
+                key={upload._id}
+                className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 group overflow-hidden"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </li>
-          ))}
+                {/* Image preview — full width for images */}
+                {isImage && upload.url && (
+                  <a href={upload.url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={upload.url}
+                      alt={upload.filename}
+                      className="w-full max-h-56 object-cover border-b border-gray-100 dark:border-gray-800"
+                    />
+                  </a>
+                )}
+
+                <div className="p-3 sm:p-4 space-y-2">
+                  {/* Row 1: icon/type + filename + actions */}
+                  <div className="flex items-start gap-3">
+                    {!isImage && (
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+                        {fileIcon(upload.mimeType)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{upload.filename}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 flex flex-wrap gap-x-2">
+                        <span>{formatSize(upload.size)}</span>
+                        <span>{dateStr} à {timeStr}</span>
+                        <span className="uppercase tracking-wide opacity-60">{upload.mimeType.split("/")[1]}</span>
+                        {upload.todoId && <span className="text-blue-400">tâche liée</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {upload.url && (
+                        <a
+                          href={upload.url}
+                          download={upload.filename}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+                          aria-label="Télécharger"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </a>
+                      )}
+                      <button
+                        onClick={() => removeUpload({ id: upload._id as Id<"uploads"> })}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1"
+                        aria-label="Supprimer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Row 2: AI description or "pending" indicator */}
+                  {upload.description ? (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-800 pt-2">
+                      {upload.description}
+                    </p>
+                  ) : isImage && !upload.imageProcessed && (
+                    <p className="text-xs text-gray-400 italic border-t border-gray-100 dark:border-gray-800 pt-2">
+                      Description IA en attente (prochaine analyse à 02:00 UTC)
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </main>
