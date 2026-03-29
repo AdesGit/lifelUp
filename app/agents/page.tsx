@@ -9,9 +9,9 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { PushNotificationButton } from "@/components/PushNotificationButton";
 
 const AGENT_META: Record<string, { schedule: string; description: string; type: "vps" | "cloud" }> = {
-  "coach":           { schedule: "Toutes les 5 min (VPS)", description: "Répond aux sessions de coaching en attente", type: "vps" },
+  "coach":           { schedule: "Toutes les heures (VPS)", description: "Répond aux sessions de coaching en attente", type: "vps" },
   "coach-remote":    { schedule: "Toutes les heures (cloud)", description: "Répond aux sessions de coaching (agent cloud CCR)", type: "cloud" },
-  "star-evaluator":  { schedule: "Toutes les 5 min (VPS)", description: "Attribue des étoiles aux tâches non évaluées", type: "vps" },
+  "star-evaluator":  { schedule: "Toutes les heures (VPS)", description: "Attribue des étoiles fixes aux tâches non évaluées", type: "vps" },
   "image-agent":     { schedule: "Quotidien à 02:00 UTC (VPS)", description: "Compresse et décrit les images uploadées", type: "vps" },
   "goals-daily":     { schedule: "Quotidien à 00:00 UTC (cloud)", description: "Extrait les objectifs depuis l'historique coach", type: "cloud" },
   "context-weekly":  { schedule: "Dimanche à 02:00 UTC (cloud)", description: "Extrait les entrées de contexte famille", type: "cloud" },
