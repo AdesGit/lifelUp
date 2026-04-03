@@ -1,0 +1,65 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const state = searchParams.get("state"); // base64(userId)
+  const error = searchParams.get("error");
+
+  if (error || !code || !state) {
+    return NextResponse.redirect(new URL("/integrations?error=oauth_denied", req.url));
+  }
+
+  // Decode userId from state
+  const userId = Buffer.from(state, "base64").toString("utf-8");
+
+  // Exchange code for tokens
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: GOOGLE_REDIRECT_URI,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  if (!tokenRes.ok) {
+    return NextResponse.redirect(new URL("/integrations?error=token_exchange", req.url));
+  }
+
+  const { access_token, refresh_token, expires_in } = await tokenRes.json();
+
+  // Fetch Google email to display in UI
+  const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  const { email: googleEmail } = await userRes.json();
+
+  // Store token in Convex via the agent HTTP endpoint
+  const agentSecret = process.env.AGENT_SECRET!;
+  await fetch(`${CONVEX_URL}/agent/v1/gcal-oauth-save`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${agentSecret}`,
+    },
+    body: JSON.stringify({
+      userId,
+      accessToken: access_token,
+      refreshToken: refresh_token,
+      expiresAt: Date.now() + expires_in * 1000,
+      googleEmail,
+      calendarId: "primary",
+    }),
+  });
+
+  return NextResponse.redirect(new URL("/integrations?connected=true", req.url));
+}

@@ -114,6 +114,10 @@ export default function RecurringTodosPage() {
           <Link href="/agents" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
             Agents
           </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/integrations" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Intégrations
+          </Link>
         </nav>
         <div className="flex items-center gap-2 flex-shrink-0">
           <PushNotificationButton />

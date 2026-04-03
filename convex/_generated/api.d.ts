@@ -14,6 +14,7 @@ import type * as auth from "../auth.js";
 import type * as coach from "../coach.js";
 import type * as context from "../context.js";
 import type * as goals from "../goals.js";
+import type * as googleCalendar from "../googleCalendar.js";
 import type * as http from "../http.js";
 import type * as quests from "../quests.js";
 import type * as recurringTodos from "../recurringTodos.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   coach: typeof coach;
   context: typeof context;
   goals: typeof goals;
+  googleCalendar: typeof googleCalendar;
   http: typeof http;
   quests: typeof quests;
   recurringTodos: typeof recurringTodos;

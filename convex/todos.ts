@@ -210,3 +210,47 @@ export const resetRecurringTodo = internalMutation({
     await ctx.db.patch(id, { completed: false, nextDueAt });
   },
 });
+
+// Returns all todos with dueAt set for a given user (for GCal push)
+export const getTodosWithDueAt = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    return ctx.db.query("todos")
+      .withIndex("by_user_due", (q) => q.eq("userId", userId).gt("dueAt", 0))
+      .collect();
+  },
+});
+
+// Set gcalEventId + gcalUpdatedAt after creating/updating a GCal event
+export const patchGcalFields = internalMutation({
+  args: {
+    id: v.id("todos"),
+    gcalEventId: v.optional(v.string()),
+    gcalUpdatedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, { id, gcalEventId, gcalUpdatedAt }) => {
+    await ctx.db.patch(id, { gcalEventId, gcalUpdatedAt });
+  },
+});
+
+// Create a todo from a GCal event (GCal → LifeLup direction)
+export const createFromGcal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    text: v.string(),
+    dueAt: v.number(),
+    gcalEventId: v.string(),
+    gcalUpdatedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("todos", {
+      userId: args.userId,
+      text: args.text,
+      completed: false,
+      dueAt: args.dueAt,
+      gcalEventId: args.gcalEventId,
+      gcalUpdatedAt: args.gcalUpdatedAt,
+      category: "other",
+    });
+  },
+});

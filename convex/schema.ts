@@ -33,9 +33,13 @@ const schema = defineSchema({
       v.literal("leisure"),
       v.literal("other"),
     )),
+    dueAt: v.optional(v.number()),         // unix ms — user-set due date, drives calendar sync
+    gcalEventId: v.optional(v.string()),   // GCal event ID (set after sync push)
+    gcalUpdatedAt: v.optional(v.number()), // GCal event's last modification time (unix ms)
   })
     .index("by_user", ["userId"])
-    .index("by_next_due", ["nextDueAt"]),
+    .index("by_next_due", ["nextDueAt"])
+    .index("by_user_due", ["userId", "dueAt"]),
   pushSubscriptions: defineTable({
     userId: v.id("users"),
     endpoint: v.string(),
@@ -154,6 +158,17 @@ const schema = defineSchema({
   })
     .index("by_agent", ["agentName"])
     .index("by_run_at", ["runAt"]),
+  googleCalendarTokens: defineTable({
+    userId: v.id("users"),
+    accessToken: v.string(),
+    refreshToken: v.string(),
+    expiresAt: v.number(),          // unix ms
+    googleEmail: v.string(),        // displayed in UI
+    calendarId: v.string(),         // "primary"
+    connectedAt: v.number(),        // unix ms
+    lastSyncAt: v.optional(v.number()), // unix ms, updated after each sync run
+  })
+    .index("by_user", ["userId"]),
 });
 
 export default schema;

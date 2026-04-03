@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { auth } from "./auth";
+import { Id } from "./_generated/dataModel";
 
 const http = httpRouter();
 
@@ -306,6 +307,95 @@ http.route({
     if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
     const body = await req.json();
     await ctx.runMutation(internal.agentRuns.logRun, body);
+    return Response.json({ ok: true });
+  }),
+});
+
+// ─── Google Calendar sync endpoints ──────────────────────────────────────────
+
+// GET /agent/v1/gcal-tokens — all users with GCal tokens (for sync loop)
+http.route({
+  path: "/agent/v1/gcal-tokens",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const tokens = await ctx.runQuery(internal.googleCalendar.getAllTokens);
+    return Response.json(tokens);
+  }),
+});
+
+// POST /agent/v1/gcal-tokens-update — update access token after refresh
+http.route({
+  path: "/agent/v1/gcal-tokens-update",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId, accessToken, expiresAt } = await req.json();
+    await ctx.runMutation(internal.googleCalendar.updateAccessToken, { userId, accessToken, expiresAt });
+    return Response.json({ ok: true });
+  }),
+});
+
+// GET /agent/v1/gcal-todos?userId=... — todos with dueAt for a given user
+http.route({
+  path: "/agent/v1/gcal-todos",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const url = new URL(req.url);
+    const userId = url.searchParams.get("userId");
+    if (!userId) return new Response("Missing userId", { status: 400 });
+    const todos = await ctx.runQuery(internal.todos.getTodosWithDueAt, { userId: userId as Id<"users"> });
+    return Response.json(todos);
+  }),
+});
+
+// POST /agent/v1/gcal-todo-update — set gcalEventId/gcalUpdatedAt on a todo
+http.route({
+  path: "/agent/v1/gcal-todo-update",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { id, gcalEventId, gcalUpdatedAt } = await req.json();
+    await ctx.runMutation(internal.todos.patchGcalFields, { id, gcalEventId, gcalUpdatedAt });
+    return Response.json({ ok: true });
+  }),
+});
+
+// POST /agent/v1/gcal-todo-create — create a todo from a GCal event
+http.route({
+  path: "/agent/v1/gcal-todo-create",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const body = await req.json();
+    await ctx.runMutation(internal.todos.createFromGcal, body);
+    return Response.json({ ok: true });
+  }),
+});
+
+// POST /agent/v1/gcal-sync-done — update lastSyncAt for a user token
+http.route({
+  path: "/agent/v1/gcal-sync-done",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId, lastSyncAt } = await req.json();
+    await ctx.runMutation(internal.googleCalendar.updateLastSync, { userId, lastSyncAt });
+    return Response.json({ ok: true });
+  }),
+});
+
+// POST /agent/v1/gcal-oauth-save — called by Next.js OAuth callback route to persist token
+http.route({
+  path: "/agent/v1/gcal-oauth-save",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId, accessToken, refreshToken, expiresAt, googleEmail, calendarId } = await req.json();
+    await ctx.runMutation(internal.googleCalendar.saveToken, {
+      userId, accessToken, refreshToken, expiresAt, googleEmail, calendarId,
+    });
     return Response.json({ ok: true });
   }),
 });
