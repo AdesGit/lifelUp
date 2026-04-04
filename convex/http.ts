@@ -362,6 +362,18 @@ http.route({
   }),
 });
 
+// POST /agent/v1/gcal-todo-due-update — update dueAt on a todo (for calendar drag & drop)
+http.route({
+  path: "/agent/v1/gcal-todo-due-update",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { id, dueAt } = await req.json();
+    await ctx.runMutation(internal.todos.patchDueAt, { id, dueAt });
+    return Response.json({ ok: true });
+  }),
+});
+
 // POST /agent/v1/gcal-todo-create — create a todo from a GCal event
 http.route({
   path: "/agent/v1/gcal-todo-create",

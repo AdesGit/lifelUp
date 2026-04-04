@@ -312,3 +312,138 @@ export const setCompleted = internalMutation({
     await ctx.db.patch(id, { completed });
   },
 });
+
+// ─── New functions for Calendar, Todos Board, Dashboard ──────────────────────
+
+// Public query: returns { planned, unplanned } for current user (for todos board)
+export const listForBoard = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return { planned: [], unplanned: [] };
+    const all = await ctx.db.query("todos")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("completed"), false))
+      .collect();
+    const planned = all
+      .filter((t) => t.dueAt != null)
+      .sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+    const unplanned = all
+      .filter((t) => t.dueAt == null)
+      .sort((a, b) => a._creationTime - b._creationTime);
+    return { planned, unplanned };
+  },
+});
+
+// Public query: all users with their incomplete todos (for family board view)
+export const listAllForFamily = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const allUsers = await ctx.db.query("users").collect();
+    const allTodos = await ctx.db.query("todos")
+      .filter((q) => q.eq(q.field("completed"), false))
+      .collect();
+    return allUsers.map((u) => ({
+      user: u,
+      todos: allTodos
+        .filter((t) => t.userId === u._id)
+        .sort((a, b) => (a.dueAt ?? a._creationTime) - (b.dueAt ?? b._creationTime)),
+    }));
+  },
+});
+
+// Public query: todos with dueAt in a time range (for calendar views)
+export const getTodosInRange = query({
+  args: { fromTs: v.number(), toTs: v.number() },
+  handler: async (ctx, { fromTs, toTs }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const allUsers = await ctx.db.query("users").collect();
+    const allTodos = await ctx.db.query("todos").collect();
+    const userMap = Object.fromEntries(allUsers.map((u) => [u._id, u]));
+    return allTodos
+      .filter((t) => t.dueAt != null && t.dueAt >= fromTs && t.dueAt <= toTs)
+      .map((t) => ({ ...t, user: userMap[t.userId] ?? null }));
+  },
+});
+
+// Mutation: update dueAt on a todo (for calendar drag & drop by owner)
+export const updateDueAt = mutation({
+  args: { id: v.id("todos"), dueAt: v.number() },
+  handler: async (ctx, { id, dueAt }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const todo = await ctx.db.get(id);
+    if (!todo || todo.userId !== userId) throw new Error("Not found or not authorized");
+    await ctx.db.patch(id, { dueAt, lifelupUpdatedAt: Date.now() });
+  },
+});
+
+// Internal mutation: set dueAt on any todo (used by event-move API route)
+export const patchDueAt = internalMutation({
+  args: { id: v.id("todos"), dueAt: v.number() },
+  handler: async (ctx, { id, dueAt }) => {
+    await ctx.db.patch(id, { dueAt, lifelupUpdatedAt: Date.now() });
+  },
+});
+
+// Mutation: patch todo title (for calendar edit modal)
+export const patchTitle = mutation({
+  args: { id: v.id("todos"), text: v.string() },
+  handler: async (ctx, { id, text }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const todo = await ctx.db.get(id);
+    if (!todo || todo.userId !== userId) throw new Error("Not found");
+    await ctx.db.patch(id, { text, lifelupUpdatedAt: Date.now() });
+  },
+});
+
+// Mutation: create a todo with a dueAt (for calendar create modal)
+export const createWithDueAt = mutation({
+  args: {
+    text: v.string(),
+    dueAt: v.number(),
+    category: v.optional(v.union(
+      v.literal("household"),
+      v.literal("family_help"),
+      v.literal("training"),
+      v.literal("school_work"),
+      v.literal("leisure"),
+      v.literal("other"),
+    )),
+  },
+  handler: async (ctx, { text, dueAt, category }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    return ctx.db.insert("todos", {
+      userId,
+      text,
+      completed: false,
+      dueAt,
+      category: category ?? "other",
+      lifelupUpdatedAt: Date.now(),
+    });
+  },
+});
+
+// Mutation: complete a todo owned by any family member (family board view)
+export const toggleForUser = mutation({
+  args: { id: v.id("todos") },
+  handler: async (ctx, { id }) => {
+    const callerId = await getAuthUserId(ctx);
+    if (!callerId) throw new Error("Not authenticated");
+    const todo = await ctx.db.get(id);
+    if (!todo) throw new Error("Not found");
+    const nowCompleted = !todo.completed;
+    await ctx.db.patch(id, { completed: nowCompleted, lifelupUpdatedAt: Date.now() });
+    if (nowCompleted && todo.starValue) {
+      const owner = await ctx.db.get(todo.userId);
+      if (owner) {
+        await ctx.db.patch(todo.userId, { totalStars: (owner.totalStars ?? 0) + todo.starValue });
+      }
+    }
+  },
+});

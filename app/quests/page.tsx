@@ -63,6 +63,12 @@ export default function QuestsPage() {
           <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
           <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">Quests</span>
           <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/calendar" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">Calendrier</Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/todos-board" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">Todos Board</Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/dashboard" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">Dashboard</Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
           <Link href="/agents" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">Agents</Link>
           <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
           <Link href="/integrations" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">Intégrations</Link>

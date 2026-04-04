@@ -22,3 +22,13 @@ export const updateProfile = mutation({
     await ctx.db.patch(userId, { firstName, lastName });
   },
 });
+
+// Returns all users (for calendar color mapping and family views)
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    return ctx.db.query("users").collect();
+  },
+});
