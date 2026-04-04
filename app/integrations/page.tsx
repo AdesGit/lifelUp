@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useQuery, useMutation } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -41,6 +41,8 @@ function IntegrationsContent() {
   const token = useQuery(api.googleCalendar.getMyToken);
   const meQuery = useQuery(api.users.getMe);
   const disconnect = useMutation(api.googleCalendar.disconnect);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   const connected = searchParams.get("connected") === "true";
   const oauthError = searchParams.get("error");
@@ -164,12 +166,28 @@ function IntegrationsContent() {
                 Dernière sync:{" "}
                 {token.lastSyncAt ? relativeTime(token.lastSyncAt) : "Jamais"}
               </p>
+              {syncResult && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">{syncResult}</p>
+              )}
               <div className="flex gap-2">
                 <button
-                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => alert("Lancez le script manuellement : pm2 restart lifelup-calendar-sync")}
+                  disabled={syncing}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  onClick={async () => {
+                    setSyncing(true);
+                    setSyncResult(null);
+                    try {
+                      const res = await fetch("/api/gcal/sync", { method: "POST" });
+                      const data = await res.json();
+                      setSyncResult(data.ok ? "Synchronisation terminée." : `Erreur : ${data.error}`);
+                    } catch {
+                      setSyncResult("Erreur réseau.");
+                    } finally {
+                      setSyncing(false);
+                    }
+                  }}
                 >
-                  Synchroniser maintenant
+                  {syncing ? "Synchronisation..." : "Synchroniser maintenant"}
                 </button>
                 <button
                   className="text-xs px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"

@@ -386,6 +386,24 @@ http.route({
   }),
 });
 
+// POST /agent/v1/gcal-todo-add-due — add dueAt to an existing todo or create a plain todo with dueAt (for testing/manual use)
+http.route({
+  path: "/agent/v1/gcal-todo-add-due",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId, text, dueAt } = await req.json();
+    const id = await ctx.runMutation(internal.todos.createFromGcal, {
+      userId,
+      text,
+      dueAt,
+      gcalEventId: "",   // empty = not yet pushed to GCal, sync agent will create the event
+      gcalUpdatedAt: 0,
+    });
+    return Response.json({ ok: true, id });
+  }),
+});
+
 // POST /agent/v1/gcal-oauth-save — called by Next.js OAuth callback route to persist token
 http.route({
   path: "/agent/v1/gcal-oauth-save",
