@@ -125,6 +125,8 @@ function IntegrationsContent() {
           <div className="rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-300">
             {oauthError === "oauth_denied"
               ? "Connexion refusée. Veuillez réessayer."
+              : oauthError === "save_failed"
+              ? "Connexion Google OK mais la sauvegarde a échoué. Veuillez réessayer."
               : "Erreur lors de la connexion. Veuillez réessayer."}
           </div>
         )}

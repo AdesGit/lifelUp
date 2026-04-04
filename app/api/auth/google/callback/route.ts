@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   // Store token in Convex via the agent HTTP endpoint
   const agentSecret = process.env.AGENT_SECRET!;
-  await fetch(`${CONVEX_URL}/agent/v1/gcal-oauth-save`, {
+  const saveRes = await fetch(`${CONVEX_URL}/agent/v1/gcal-oauth-save`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -64,6 +64,13 @@ export async function GET(req: NextRequest) {
       calendarId: "primary",
     }),
   });
+
+  if (!saveRes.ok) {
+    const body = await saveRes.text().catch(() => "(no body)");
+    console.error("[gcal-callback] Failed to save token. Status:", saveRes.status, "Body:", body);
+    console.error("[gcal-callback] userId:", userId, "email:", googleEmail);
+    return NextResponse.redirect(new URL("/integrations?error=save_failed", APP_BASE_URL));
+  }
 
   return NextResponse.redirect(new URL("/integrations?connected=true", APP_BASE_URL));
 }
