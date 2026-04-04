@@ -19,8 +19,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/integrations?error=oauth_denied", APP_BASE_URL));
   }
 
-  // Decode userId from state
-  const userId = Buffer.from(state, "base64").toString("utf-8");
+  // Decode userId + LifeLup email from state (encoded as base64 JSON)
+  let userId: string;
+  let googleEmail: string;
+  try {
+    const decoded = JSON.parse(Buffer.from(state, "base64").toString("utf-8"));
+    userId = decoded.userId;
+    googleEmail = decoded.email;
+  } catch {
+    return NextResponse.redirect(new URL("/integrations?error=oauth_denied", APP_BASE_URL));
+  }
 
   // Exchange code for tokens
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -40,12 +48,6 @@ export async function GET(req: NextRequest) {
   }
 
   const { access_token, refresh_token, expires_in } = await tokenRes.json();
-
-  // Fetch Google email to display in UI
-  const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-    headers: { Authorization: `Bearer ${access_token}` },
-  });
-  const { email: googleEmail } = await userRes.json();
 
   // Store token in Convex via the agent HTTP endpoint
   const agentSecret = process.env.AGENT_SECRET!;

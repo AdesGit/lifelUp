@@ -19,7 +19,9 @@ function relativeTime(ts: number): string {
   return `il y a ${days} j`;
 }
 
-function buildGoogleOAuthUrl(userId: string): string {
+function buildGoogleOAuthUrl(userId: string, email: string): string {
+  // Encode both userId and LifeLup email in state — avoids needing userinfo scope
+  const state = btoa(JSON.stringify({ userId, email }));
   const params = new URLSearchParams({
     client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
     redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
@@ -27,7 +29,7 @@ function buildGoogleOAuthUrl(userId: string): string {
     response_type: "code",
     access_type: "offline",
     prompt: "consent",
-    state: btoa(userId),
+    state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
@@ -56,6 +58,7 @@ function IntegrationsContent() {
   }
 
   const userId = meQuery?._id;
+  const userEmail = meQuery?.email ?? "";
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -187,7 +190,7 @@ function IntegrationsContent() {
               className="w-full py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
               onClick={() => {
                 if (!userId) return;
-                window.location.href = buildGoogleOAuthUrl(userId);
+                window.location.href = buildGoogleOAuthUrl(userId, userEmail);
               }}
             >
               Connecter Google Agenda
