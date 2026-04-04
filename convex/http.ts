@@ -523,4 +523,42 @@ http.route({
   }),
 });
 
+// POST /agent/v1/todos-dedupe — remove duplicate todos for a user (keep the one with gtaskId or gcalEventId, delete the rest)
+http.route({
+  path: "/agent/v1/todos-dedupe",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId } = await req.json();
+    const todos = await ctx.runQuery(internal.todos.getAllTodosForUser, { userId: userId as Id<"users"> });
+
+    // Group by normalized text
+    const byText = new Map<string, typeof todos>();
+    for (const t of todos) {
+      const key = (t.text ?? "").toLowerCase().trim();
+      if (!byText.has(key)) byText.set(key, []);
+      byText.get(key)!.push(t);
+    }
+
+    let deleted = 0;
+    for (const [, group] of byText) {
+      if (group.length <= 1) continue;
+      // Sort: keep the one with gtaskId first, then gcalEventId, then oldest _creationTime
+      group.sort((a, b) => {
+        if (a.gtaskId && !b.gtaskId) return -1;
+        if (!a.gtaskId && b.gtaskId) return 1;
+        if (a.gcalEventId && !b.gcalEventId) return -1;
+        if (!a.gcalEventId && b.gcalEventId) return 1;
+        return (a._creationTime ?? 0) - (b._creationTime ?? 0);
+      });
+      // Delete all but the first (best) entry
+      for (const dupe of group.slice(1)) {
+        await ctx.runMutation(internal.todos.deleteTodo, { id: dupe._id });
+        deleted++;
+      }
+    }
+    return Response.json({ ok: true, deleted });
+  }),
+});
+
 export default http;

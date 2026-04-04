@@ -447,3 +447,11 @@ export const toggleForUser = mutation({
     }
   },
 });
+
+// Internal mutation: hard-delete a todo by id (used by dedupe endpoint)
+export const deleteTodo = internalMutation({
+  args: { id: v.id("todos") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+  },
+});
