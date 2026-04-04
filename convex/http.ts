@@ -418,4 +418,97 @@ http.route({
   }),
 });
 
+// ─── Google Tasks sync endpoints ─────────────────────────────────────────────
+
+// POST /agent/v1/gtask-scope-set — mark tasksScope=true after re-authorization
+http.route({
+  path: "/agent/v1/gtask-scope-set",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId } = await req.json();
+    await ctx.runMutation(internal.googleCalendar.setTasksScope, { userId });
+    return Response.json({ ok: true });
+  }),
+});
+
+// GET /agent/v1/gtask-tokens — users with tasksScope=true
+http.route({
+  path: "/agent/v1/gtask-tokens",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const tokens = await ctx.runQuery(internal.googleCalendar.getTasksTokens);
+    return Response.json(tokens);
+  }),
+});
+
+// POST /agent/v1/gtask-tokens-update — update access token after refresh
+http.route({
+  path: "/agent/v1/gtask-tokens-update",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId, accessToken, expiresAt } = await req.json();
+    await ctx.runMutation(internal.googleCalendar.updateAccessToken, { userId, accessToken, expiresAt });
+    return Response.json({ ok: true });
+  }),
+});
+
+// GET /agent/v1/gtask-todos?userId=... — ALL todos for a user (not filtered by dueAt)
+http.route({
+  path: "/agent/v1/gtask-todos",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const url = new URL(req.url);
+    const userId = url.searchParams.get("userId");
+    if (!userId) return new Response("Missing userId", { status: 400 });
+    const todos = await ctx.runQuery(internal.todos.getAllTodosForUser, { userId: userId as Id<"users"> });
+    return Response.json(todos);
+  }),
+});
+
+// POST /agent/v1/gtask-todo-update — patch gtaskId, gtaskListId, gtaskUpdatedAt (and optionally completed)
+http.route({
+  path: "/agent/v1/gtask-todo-update",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { id, gtaskId, gtaskListId, gtaskUpdatedAt, completed } = await req.json();
+    await ctx.runMutation(internal.todos.patchGtaskFields, { id, gtaskId, gtaskListId, gtaskUpdatedAt });
+    if (typeof completed === "boolean") {
+      await ctx.runMutation(internal.todos.setCompleted, { id, completed });
+    }
+    return Response.json({ ok: true });
+  }),
+});
+
+// POST /agent/v1/gtask-todo-create — create todo from a Google Task
+http.route({
+  path: "/agent/v1/gtask-todo-create",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const body = await req.json();
+    await ctx.runMutation(internal.todos.createFromGtask, body);
+    return Response.json({ ok: true });
+  }),
+});
+
+// POST /agent/v1/gtask-sync-done — update lastTasksSyncAt and optionally cache defaultTaskListId
+http.route({
+  path: "/agent/v1/gtask-sync-done",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const { userId, lastTasksSyncAt, defaultTaskListId } = await req.json();
+    await ctx.runMutation(internal.googleCalendar.updateLastTasksSync, { userId, lastTasksSyncAt });
+    if (defaultTaskListId) {
+      await ctx.runMutation(internal.googleCalendar.updateDefaultTaskList, { userId, defaultTaskListId });
+    }
+    return Response.json({ ok: true });
+  }),
+});
+
 export default http;

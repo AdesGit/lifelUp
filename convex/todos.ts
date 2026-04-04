@@ -80,6 +80,7 @@ export const create = mutation({
       scheduledTime: scheduledTime ?? undefined,
       nextDueAt,
       category: category ?? "other",
+      lifelupUpdatedAt: Date.now(),
     });
   },
 });
@@ -99,7 +100,7 @@ export const toggle = mutation({
       if (todo.isRecurring && todo.scheduledTime && todo.frequency) {
         nextDueAt = computeNextDueAt(todo.scheduledTime, todo.frequency);
       }
-      await ctx.db.patch(id, { completed: true, nextDueAt });
+      await ctx.db.patch(id, { completed: true, nextDueAt, lifelupUpdatedAt: Date.now() });
 
       if (todo.starValue) {
         const user = await ctx.db.get(userId);
@@ -119,6 +120,7 @@ export const toggle = mutation({
         nextDueAt: todo.isRecurring && todo.scheduledTime && todo.frequency
           ? computeNextDueAt(todo.scheduledTime, todo.frequency)
           : undefined,
+        lifelupUpdatedAt: Date.now(),
       });
     }
   },
@@ -252,5 +254,61 @@ export const createFromGcal = internalMutation({
       gcalUpdatedAt: args.gcalUpdatedAt,
       category: "other",
     });
+  },
+});
+
+// Returns ALL todos for a user (for Tasks sync — not filtered by dueAt)
+export const getAllTodosForUser = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    return ctx.db.query("todos")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+  },
+});
+
+// Patch gtask fields after syncing a todo to/from Google Tasks
+export const patchGtaskFields = internalMutation({
+  args: {
+    id: v.id("todos"),
+    gtaskId: v.optional(v.string()),
+    gtaskListId: v.optional(v.string()),
+    gtaskUpdatedAt: v.optional(v.number()),
+  },
+  handler: async (ctx, { id, gtaskId, gtaskListId, gtaskUpdatedAt }) => {
+    await ctx.db.patch(id, { gtaskId, gtaskListId, gtaskUpdatedAt });
+  },
+});
+
+// Create a todo from a Google Task (GTasks → LifeLup direction)
+export const createFromGtask = internalMutation({
+  args: {
+    userId: v.id("users"),
+    text: v.string(),
+    dueAt: v.optional(v.number()),       // may be absent — Google Tasks due dates are optional
+    gtaskId: v.string(),
+    gtaskListId: v.string(),
+    gtaskUpdatedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("todos", {
+      userId: args.userId,
+      text: args.text,
+      completed: false,
+      dueAt: args.dueAt,
+      gtaskId: args.gtaskId,
+      gtaskListId: args.gtaskListId,
+      gtaskUpdatedAt: args.gtaskUpdatedAt,
+      lifelupUpdatedAt: 0,  // 0 means "never edited in LifeLup" → agent won't re-push
+      category: "other",
+    });
+  },
+});
+
+// Set completed flag (used by Tasks sync when a Google Task is marked done)
+export const setCompleted = internalMutation({
+  args: { id: v.id("todos"), completed: v.boolean() },
+  handler: async (ctx, { id, completed }) => {
+    await ctx.db.patch(id, { completed });
   },
 });

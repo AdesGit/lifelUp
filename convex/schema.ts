@@ -36,6 +36,10 @@ const schema = defineSchema({
     dueAt: v.optional(v.number()),         // unix ms — user-set due date, drives calendar sync
     gcalEventId: v.optional(v.string()),   // GCal event ID (set after sync push)
     gcalUpdatedAt: v.optional(v.number()), // GCal event's last modification time (unix ms)
+    gtaskId: v.optional(v.string()),          // Google Task ID
+    gtaskListId: v.optional(v.string()),      // which Google Task list it belongs to
+    gtaskUpdatedAt: v.optional(v.number()),   // last known GTask modification time (unix ms)
+    lifelupUpdatedAt: v.optional(v.number()), // last time this todo was edited in LifeLup (unix ms)
   })
     .index("by_user", ["userId"])
     .index("by_next_due", ["nextDueAt"])
@@ -167,6 +171,9 @@ const schema = defineSchema({
     calendarId: v.string(),         // "primary"
     connectedAt: v.number(),        // unix ms
     lastSyncAt: v.optional(v.number()), // unix ms, updated after each sync run
+    tasksScope: v.optional(v.boolean()),          // true after user re-authorized with Tasks scope
+    defaultTaskListId: v.optional(v.string()),    // cached ID of user's "My Tasks" list
+    lastTasksSyncAt: v.optional(v.number()),      // unix ms, updated after each Tasks sync run
   })
     .index("by_user", ["userId"]),
 });

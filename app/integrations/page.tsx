@@ -25,7 +25,7 @@ function buildGoogleOAuthUrl(userId: string, email: string): string {
   const params = new URLSearchParams({
     client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
     redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
-    scope: "https://www.googleapis.com/auth/calendar",
+    scope: "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/tasks",
     response_type: "code",
     access_type: "offline",
     prompt: "consent",
@@ -136,6 +136,7 @@ function IntegrationsContent() {
           </div>
         )}
 
+        {/* Integration cards */}
         {/* Google Calendar card */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
           <div className="flex items-center gap-3">
@@ -213,6 +214,60 @@ function IntegrationsContent() {
             >
               Connecter Google Agenda
             </button>
+          )}
+        </div>
+
+        {/* Google Tasks card */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center flex-shrink-0">
+              {/* Checkmark/Tasks icon */}
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-blue-500" fill="currentColor">
+                <path d="M22 5.18L10.59 16.6l-4.24-4.24 1.41-1.41 2.83 2.83 10-10L22 5.18zm-2.21 5.04c.13.57.21 1.17.21 1.78 0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8c1.58 0 3.04.46 4.28 1.25l1.44-1.44A9.9 9.9 0 0 0 12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-1.19-.22-2.33-.6-3.39l-1.61 1.61z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-white">Google Tasks</h3>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Synchronisez vos todos avec Google Tasks (bidirectionnel).
+              </p>
+            </div>
+          </div>
+
+          {!token ? (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Connectez d&apos;abord Google Agenda pour activer Google Tasks.
+            </p>
+          ) : !token.tasksScope ? (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 px-3 py-2 text-xs text-yellow-700 dark:text-yellow-300">
+                Reconnectez votre compte Google pour activer la synchronisation Google Tasks.
+              </div>
+              <button
+                disabled={!userId}
+                className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors disabled:opacity-50"
+                onClick={() => {
+                  if (!userId) return;
+                  window.location.href = buildGoogleOAuthUrl(userId, userEmail);
+                }}
+              >
+                Reconnecter Google
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                  Connecté
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{token.googleEmail}</span>
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Dernière sync Tasks:{" "}
+                {token.lastTasksSyncAt ? relativeTime(token.lastTasksSyncAt) : "Jamais"}
+              </p>
+            </div>
           )}
         </div>
       </div>

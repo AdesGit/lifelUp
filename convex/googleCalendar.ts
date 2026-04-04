@@ -85,3 +85,51 @@ export const getAllTokens = internalQuery({
   args: {},
   handler: async (ctx) => ctx.db.query("googleCalendarTokens").collect(),
 });
+
+// Called by gcal-oauth-save endpoint when Tasks scope is present
+export const setTasksScope = internalMutation({
+  args: { userId: v.id("users"), defaultTaskListId: v.optional(v.string()) },
+  handler: async (ctx, { userId, defaultTaskListId }) => {
+    const token = await ctx.db.query("googleCalendarTokens")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (token) {
+      await ctx.db.patch(token._id, {
+        tasksScope: true,
+        ...(defaultTaskListId ? { defaultTaskListId } : {}),
+      });
+    }
+  },
+});
+
+// Called by tasks-sync.mjs to cache the default task list ID
+export const updateDefaultTaskList = internalMutation({
+  args: { userId: v.id("users"), defaultTaskListId: v.string() },
+  handler: async (ctx, { userId, defaultTaskListId }) => {
+    const token = await ctx.db.query("googleCalendarTokens")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (token) await ctx.db.patch(token._id, { defaultTaskListId });
+  },
+});
+
+// Called by tasks-sync.mjs after each successful sync run
+export const updateLastTasksSync = internalMutation({
+  args: { userId: v.id("users"), lastTasksSyncAt: v.number() },
+  handler: async (ctx, { userId, lastTasksSyncAt }) => {
+    const token = await ctx.db.query("googleCalendarTokens")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (token) await ctx.db.patch(token._id, { lastTasksSyncAt });
+  },
+});
+
+// Returns all users with tasksScope=true (for the Tasks sync agent)
+export const getTasksTokens = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return ctx.db.query("googleCalendarTokens")
+      .filter((q) => q.eq(q.field("tasksScope"), true))
+      .collect();
+  },
+});

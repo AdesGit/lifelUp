@@ -74,5 +74,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/integrations?error=save_failed", APP_BASE_URL));
   }
 
+  // Check if Tasks scope was granted (present in token response scopes)
+  const grantedScopes: string = await fetch(
+    "https://www.googleapis.com/oauth2/v2/tokeninfo?access_token=" + access_token
+  )
+    .then((r) => r.json())
+    .then((d) => d.scope ?? "")
+    .catch(() => "");
+
+  if (grantedScopes.includes("tasks")) {
+    await fetch(`${CONVEX_URL}/agent/v1/gtask-scope-set`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${agentSecret}` },
+      body: JSON.stringify({ userId }),
+    });
+  }
+
   return NextResponse.redirect(new URL("/integrations?connected=true", APP_BASE_URL));
 }
