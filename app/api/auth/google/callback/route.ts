@@ -6,13 +6,17 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
 
 export async function GET(req: NextRequest) {
+  // Derive the public base URL at runtime from GOOGLE_REDIRECT_URI to avoid
+  // localhost leaking through the Nginx reverse proxy (req.url shows localhost:3000).
+  const APP_BASE_URL = new URL(GOOGLE_REDIRECT_URI).origin;
+
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state"); // base64(userId)
   const error = searchParams.get("error");
 
   if (error || !code || !state) {
-    return NextResponse.redirect(new URL("/integrations?error=oauth_denied", req.url));
+    return NextResponse.redirect(new URL("/integrations?error=oauth_denied", APP_BASE_URL));
   }
 
   // Decode userId from state
@@ -32,7 +36,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (!tokenRes.ok) {
-    return NextResponse.redirect(new URL("/integrations?error=token_exchange", req.url));
+    return NextResponse.redirect(new URL("/integrations?error=token_exchange", APP_BASE_URL));
   }
 
   const { access_token, refresh_token, expires_in } = await tokenRes.json();
@@ -61,5 +65,5 @@ export async function GET(req: NextRequest) {
     }),
   });
 
-  return NextResponse.redirect(new URL("/integrations?connected=true", req.url));
+  return NextResponse.redirect(new URL("/integrations?connected=true", APP_BASE_URL));
 }
