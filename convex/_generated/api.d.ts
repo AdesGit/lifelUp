@@ -13,6 +13,7 @@ import type * as agentRuns from "../agentRuns.js";
 import type * as auth from "../auth.js";
 import type * as coach from "../coach.js";
 import type * as context from "../context.js";
+import type * as familylinkActivity from "../familylinkActivity.js";
 import type * as goals from "../goals.js";
 import type * as googleCalendar from "../googleCalendar.js";
 import type * as http from "../http.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   coach: typeof coach;
   context: typeof context;
+  familylinkActivity: typeof familylinkActivity;
   goals: typeof goals;
   googleCalendar: typeof googleCalendar;
   http: typeof http;

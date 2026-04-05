@@ -162,6 +162,21 @@ const schema = defineSchema({
   })
     .index("by_agent", ["agentName"])
     .index("by_run_at", ["runAt"]),
+  daily_activity: defineTable({
+    child_id:           v.number(),   // 3 (Keoni) | 4 (Kalea)
+    child_name:         v.string(),   // "Keoni" | "Kalea"
+    activity_date:      v.string(),   // "YYYY-MM-DD" — the day being reported
+    extraction_date:    v.string(),   // ISO 8601 — when the extractor ran
+    total_time_minutes: v.number(),
+    apps: v.array(v.object({
+      name:           v.string(),     // "Crunchyroll: Anime Streaming"
+      pkg:            v.string(),     // "com.crunchyroll.crunchyroid"
+      time_formatted: v.string(),     // "6h 35m"
+      minutes:        v.number(),     // 395
+    })),
+  })
+    .index("by_child_date", ["child_id", "activity_date"])
+    .index("by_date",       ["activity_date"]),
   googleCalendarTokens: defineTable({
     userId: v.id("users"),
     accessToken: v.string(),

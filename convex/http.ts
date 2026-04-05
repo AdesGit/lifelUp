@@ -523,6 +523,61 @@ http.route({
   }),
 });
 
+// ─── Family Link daily activity receiver ─────────────────────────────────────
+
+// POST /api/familylink-daily-activity — receive daily per-child screen-time data
+// Auth: x-familylink-secret header (shared secret, separate from AGENT_SECRET)
+http.route({
+  path:   "/api/familylink-daily-activity",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const secret = request.headers.get("x-familylink-secret");
+    if (!secret || secret !== process.env.FAMILYLINK_SECRET) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    let body: {
+      child_id?: unknown; child_name?: unknown; activity_date?: unknown;
+      extraction_date?: unknown; total_time_minutes?: unknown; apps?: unknown;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const required = ["child_id", "child_name", "activity_date", "extraction_date", "total_time_minutes", "apps"];
+    for (const f of required) {
+      if ((body as Record<string, unknown>)[f] === undefined) {
+        return new Response(JSON.stringify({ error: `Missing field: ${f}` }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const result = await ctx.runMutation(internal.familylinkActivity.upsertDailyActivity, {
+      child_id:           body.child_id           as number,
+      child_name:         body.child_name          as string,
+      activity_date:      body.activity_date       as string,
+      extraction_date:    body.extraction_date     as string,
+      total_time_minutes: body.total_time_minutes  as number,
+      apps:               body.apps               as Array<{ name: string; pkg: string; time_formatted: string; minutes: number }>,
+    });
+
+    return new Response(
+      JSON.stringify({ success: true, id: result.id, action: result.action }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  }),
+});
+
 // POST /agent/v1/todos-dedupe — remove duplicate todos for a user (keep the one with gtaskId or gcalEventId, delete the rest)
 http.route({
   path: "/agent/v1/todos-dedupe",
