@@ -1,130 +1,127 @@
-# Feature Request: Full Frontend Responsive Design
-
----
-
 ## What (Goal)
-Make the entire LifeLup frontend fully responsive so the app works well on mobile devices (320px–768px), tablets (768px–1024px), and desktops (1024px+). Currently, all pages share a broken navigation header that overflows on small screens, and paddings/layouts are fixed without mobile breakpoints.
+Build three new pages in LifeLup:
+1. /calendar — day/week/month calendar views showing only Google Calendar events (todos with
+   gcalEventId). Drag & drop to move events changes their dueAt in LifeLup and syncs to GCal.
+   Add/edit/delete events via inline forms.
+2. /todos-board — todos board showing ALL todos (with and without dueAt), per-user view and
+   global family view. Family view allows completing another member's todo (syncs to GTasks).
+3. /dashboard — single page combining a mini calendar widget + today's events + todo list.
 
 ## Who Uses It
-- [x] Single user (authenticated, per-user data) — uses the app on mobile phone
-- [x] All family members — family members likely access from various devices including phones
+- [x] All family members individually (per-user views)
+- [x] All family members (global family view in todos-board)
 
 ## Success Criteria
-- [ ] Navigation header works on all screen sizes — either collapses to a compact/scrollable format on mobile or uses a hamburger menu
-- [ ] All page containers use responsive padding: `p-4 sm:p-8` instead of fixed `p-8`
-- [ ] All cards use responsive padding: `p-3 sm:p-5`
-- [ ] TodoList form (input + submit button) stacks vertically on mobile: `flex-col sm:flex-row`
-- [ ] Recurring todo form controls (frequency selector + time input) stack on mobile
-- [ ] Family page tabs scroll horizontally and labels truncate properly on mobile
-- [ ] Coach page message bubbles are readable on mobile (correct max-width)
-- [ ] Context page modal and textarea are usable on mobile (`rows={3} sm:rows={5}`)
-- [ ] Sign-in page is properly centered and padded on mobile
-- [ ] App builds without TypeScript errors (`npm run build`)
-- [ ] Lint passes with zero warnings (`npm run lint`)
-- [ ] Manual check on 375px width (iPhone SE viewport) — no horizontal scrolling, no overflowing elements
-
-## Layers Affected
-- [ ] Next.js pages (all pages in `app/` directory — 7 pages total)
-- [ ] React components (`components/TodoList.tsx`, `components/SignInForm.tsx`, `components/SignOutButton.tsx`, `components/PushNotificationButton.tsx`)
-- [ ] No Convex schema changes
-- [ ] No new agent scripts
-- [ ] No new pages
-
-## Specific Issues to Fix (per file)
-
-### Navigation Header (shared across all pages)
-All pages repeat the same header pattern. Issues:
-- `px-6 py-4` → `px-4 sm:px-6 py-3 sm:py-4`
-- Navigation links: 7 items with `·` separators overflow on mobile (<640px)
-- Fix: On mobile, convert nav to a horizontal scroll with `overflow-x-auto` and smaller `text-xs` links, or use a bottom navigation bar pattern
-- Stars display in header: `flex items-center gap-2` — ensure it doesn't get cut off
-
-### `app/page.tsx` (Home/My Todos)
-- Header: responsive padding
-- Nav: horizontal scroll or collapse
-- Page container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
-
-### `app/goals/page.tsx`
-- Header: responsive padding
-- Nav: same fix
-- Container: `p-8` → `p-4 sm:p-8`
-- Goal cards: `p-5` → `p-3 sm:p-5`
-
-### `app/family/page.tsx`
-- Header: responsive padding
-- Nav: same fix
-- Container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
-- Tab bar: already has `overflow-x-auto` ✓ — add `truncate max-w-[120px]` on tab labels
-- Tab buttons: `px-4 py-3` → `px-3 py-2 sm:px-4 sm:py-3`
-- Cards: `p-5` → `p-3 sm:p-5`
-- List item: `pl-11` → `pl-8 sm:pl-11`
-
-### `app/context/page.tsx`
-- Header: responsive padding
-- Nav: same fix
-- Container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
-- Modal: `p-6` → `p-4 sm:p-6`
-- Textarea: `rows={5}` → `rows={3}`
-
-### `app/quests/page.tsx`
-- Header: responsive padding
-- Nav: same fix
-- Container: `p-8 pt-10` → `p-4 sm:p-8 sm:pt-10`
-- Quest cards: `p-5` → `p-3 sm:p-5`
-
-### `app/coach/page.tsx`
-- Header: responsive padding
-- Nav: same fix
-- Message bubbles: `max-w-[80%]` → `max-w-[85%] sm:max-w-[75%]`
-- Input area: responsive padding
-
-### `app/signin/page.tsx`
-- Container: `p-8` → `p-4 sm:p-8`
-- Emoji heading: `text-5xl` → `text-4xl sm:text-5xl`
-
-### `app/todos/recurring/page.tsx`
-- Header: responsive padding
-- Nav: same fix
-- Container: `p-8 pt-10 gap-6` → `p-4 sm:p-8 sm:pt-10 gap-4 sm:gap-6`
-- Form controls: add `flex-col sm:flex-row` for frequency/time row
-
-### `components/TodoList.tsx`
-- Input + submit button row: `flex gap-2` → `flex flex-col sm:flex-row gap-2`
-- Recurring toggle row (frequency select + time input + UTC): `flex items-center gap-2 flex-1` → wrap with `flex-col sm:flex-row`
-
-### `components/SignInForm.tsx`
-- Heading: `text-2xl` → `text-xl sm:text-2xl`
-
-## Navigation Strategy Choice
-**Approach A — Horizontal scroll nav (simpler, no JS):**
-- Wrap nav in `overflow-x-auto` scrollable container
-- Use `text-xs sm:text-sm` for nav links
-- Use `gap-2 sm:gap-3` between links
-- Remove `·` separators, use `flex gap` instead
-- Pros: No new components, no JS state, fast
-
-**Approach B — Bottom navigation bar on mobile:**
-- Show bottom bar with icons on mobile, hide top nav
-- Pros: Native mobile UX
-- Cons: More complex, needs icons per page, new component
-
-**Preferred: Approach A** — Keep it simple for MVP. Scrollable nav with smaller text and reduced gaps on mobile.
+- [ ] /calendar page has Day / Week / Month tab switcher
+- [ ] Calendar events (todos with gcalEventId) render as colored blocks on their dueAt date
+- [ ] Drag & drop an event to a new date → updates dueAt in LifeLup, triggers GCal sync
+- [ ] Click an event → edit modal (change title, date) with save + delete buttons
+- [ ] Click empty time slot → create new event modal → creates todo with dueAt + gcalEventId via sync
+- [ ] /todos-board has "Mon compte" tab (current user's todos) and "Famille" tab (all members)
+- [ ] Todos without dueAt shown in "Non planifié" column; todos with dueAt shown under their date
+- [ ] Family tab: completing a todo calls the user's Google Tasks completion endpoint
+- [ ] /dashboard shows: today's calendar events (mini) + current user's todos due today + family progress summary
+- [ ] Nav updated: add Calendar, Todos Board, Dashboard links
+- [ ] App builds without TypeScript errors
 
 ## Most Similar Existing Feature
-- All existing pages follow the same header/nav pattern — fix it once per page
-- `app/family/page.tsx` already uses `overflow-x-auto` for tabs — use same pattern for nav
+- family/page.tsx — per-user tabs + family view pattern
+- app/page.tsx — todo list pattern
+- The gcal sync fields (gcalEventId, dueAt) are already on todos
 
-## Out of Scope
-- No hamburger menu (Approach B rejected for MVP simplicity)
-- No dark mode
-- No animation or transition changes
-- No layout restructuring — same visual hierarchy, just responsive
-- No changes to Convex backend
-- No changes to agent scripts
+## Layers Affected
+- [ ] Convex functions — new queries: getTodosForCalendar (by dueAt range), getTodosByUser, getAllTodosAllUsers
+- [ ] Next.js pages — new app/calendar/page.tsx, app/todos-board/page.tsx, app/dashboard/page.tsx
+- [ ] Next.js API route — app/api/gcal/event-move/route.ts (called on drag & drop, updates dueAt + triggers GCal sync)
+- [ ] Convex schema — no new tables; new index on todos: by_user_due already exists; add by_due_range if needed
+- [ ] Nav — add Calendar, Todos Board, Dashboard to all page nav headers
 
 ## Additional Context
-- Target breakpoint: `sm` = 640px (Tailwind default). Mobile = <640px.
-- Test viewport: 375px wide (iPhone SE / most Android phones)
-- The app is used by a small family — mobile use is real and current
-- Navigation has 7 items: Accueil · Coach · Objectifs · Famille · Contexte · Récurrents · Quêtes — plus ⭐ total and Sign Out button
-- All pages are "use client" components (hooks used everywhere)
+
+### /calendar page architecture
+
+Three views: Day | Week | Month. Build custom with CSS grid (no external lib — keep bundle small).
+
+**Month view:**
+- 6-row grid × 7 columns
+- Each cell shows the date + event chips (colored, truncated text)
+- Click cell → switch to Day view for that date
+
+**Week view:**
+- 7 columns (Mon-Sun), rows = hours (00:00–23:00)
+- Events positioned by dueAt hour (if dateTime) or top of day (if date-only/all-day)
+- Drag event to different column = change date; drag to different row = change time
+
+**Day view:**
+- Single column, hour rows
+- Same drag behavior
+
+**Drag & drop:**
+- Use HTML5 drag-and-drop API (no external lib)
+- On drop: call POST /api/gcal/event-move { todoId, newDueAt }
+- /api/gcal/event-move: updates todo dueAt in Convex (via gcal-todo-update endpoint) + triggers immediate GCal PATCH
+
+**Event colors:**
+- Each user gets a color (Christian=blue, Linda=pink, Kalea=purple, Keoni=green)
+- GCal events: full color; LifeLup-native events with dueAt but no gcalEventId: lighter shade
+
+**Create event modal (click empty slot):**
+- Fields: titre, date + heure, utilisateur (current user only)
+- Saves as todo with dueAt set; sync agent will push to GCal on next run (or call /api/gcal/sync inline)
+
+**Edit/delete modal (click existing event):**
+- Fields: titre, date + heure
+- Delete = mark todo completed=true (sync agent removes from GCal) OR soft-delete via new mutation
+
+### /todos-board page
+
+Two tabs: "Mes todos" | "Famille"
+
+**Mes todos:**
+- Two sections:
+  - "Non planifié" — todos without dueAt, sorted by creation date
+  - "Planifié" — todos with dueAt, sorted by date ascending
+- Each todo: text, category badge, star value, complete button, edit button
+
+**Famille:**
+- One column per family member (4 columns or scrollable tabs on mobile)
+- Each column shows that member's todos (incomplete, sorted by dueAt then creation)
+- Complete button on each todo calls Convex mutation + triggers GTasks completion for that user
+- Read-only otherwise (can't edit other members' todos text)
+
+### /dashboard page
+
+Layout (vertical on mobile, 2-col on desktop):
+- Left: mini month calendar widget (shows dots for days with events) + today's events list
+- Right: "Mes todos aujourd'hui" (todos due today or overdue) + family progress bars (X/Y todos done today per member)
+
+### /api/gcal/event-move route
+POST { todoId, newDueAt }
+1. Update todo dueAt in Convex via internal mutation
+2. If todo has gcalEventId: PATCH GCal event immediately (don't wait for 15min agent)
+3. Return { ok: true }
+
+### New Convex queries needed
+- internal.todos.getTodosInRange: userId + fromTs + toTs → todos with dueAt in range
+- api.todos.listForBoard: userId → { planned: Todo[], unplanned: Todo[] }
+- api.todos.listAllUsers: → { [userId]: Todo[] } (for family view)
+- api.users.listAll: → User[] with email + totalStars
+
+### Navigation
+Add to nav in ALL pages: Calendar · Todos Board · Dashboard
+(between existing Quests and Agents links)
+
+### French UI throughout
+All labels in French: Jour / Semaine / Mois, Non planifié / Planifié, Mes todos / Famille,
+Aujourd'hui, Événements, etc.
+
+### No external calendar library
+Build with CSS grid + HTML5 drag-and-drop only.
+Keep components under 300 lines — split into:
+- components/calendar/MonthView.tsx
+- components/calendar/WeekView.tsx
+- components/calendar/DayView.tsx
+- components/calendar/EventModal.tsx
+- components/todos-board/TodoColumn.tsx
+
+Initiated from second brain feature backlog on 2026-04-04.
