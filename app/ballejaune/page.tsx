@@ -57,33 +57,40 @@ function ActivityStrip({
   onSelect: (date: string) => void;
   bar: string;
 }) {
-  const byDate = Object.fromEntries(records.map((r) => [r.activityDate, r]));
+  // Aggregate across clubs — multiple records can exist for the same date
+  const totals: Record<string, { sessions: number; minutes: number }> = {};
+  for (const r of records) {
+    if (!totals[r.activityDate]) totals[r.activityDate] = { sessions: 0, minutes: 0 };
+    totals[r.activityDate].sessions += r.totalSessions;
+    totals[r.activityDate].minutes  += r.totalMinutes;
+  }
+
   const days: string[] = [];
   for (let i = 13; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     days.push(d.toISOString().split("T")[0]);
   }
-  const max = Math.max(...days.map((d) => byDate[d]?.totalSessions ?? 0), 1);
+  const max = Math.max(...days.map((d) => totals[d]?.sessions ?? 0), 1);
 
   return (
     <div className="flex gap-1 items-end h-14">
       {days.map((d) => {
-        const rec = byDate[d];
-        const hasSessions = (rec?.totalSessions ?? 0) > 0;
+        const t = totals[d];
+        const hasSessions = (t?.sessions ?? 0) > 0;
         const isSelected = d === selected;
         return (
           <button
             key={d}
             onClick={() => onSelect(d)}
-            title={rec ? `${dateLabel(d)} — ${rec.totalSessions} session(s)` : dateLabel(d)}
+            title={t ? `${dateLabel(d)} — ${t.sessions} session(s), ${formatMinutes(t.minutes)}` : dateLabel(d)}
             className="flex flex-col items-center gap-1 flex-1 group"
           >
             <div className="w-full flex items-end justify-center h-8">
               {hasSessions ? (
                 <div
                   className={`w-full rounded-t transition-all ${bar} ${isSelected ? "opacity-100" : "opacity-40 group-hover:opacity-70"}`}
-                  style={{ height: `${Math.max(30, Math.round((rec!.totalSessions / max) * 100))}%` }}
+                  style={{ height: `${Math.max(30, Math.round((t!.sessions / max) * 100))}%` }}
                 />
               ) : (
                 <div className={`w-full h-1 rounded ${isSelected ? "bg-gray-400" : "bg-gray-200 dark:bg-gray-700"}`} />
@@ -152,6 +159,7 @@ export default function BalleJaunePage() {
   const router = useRouter();
   const [activeMember, setActiveMember] = useState<string>("GALL Christian");
   const [selectedDate, setSelectedDate] = useState<string>(yesterday());
+  // Auto-advance to most recent date with sessions once data loads
   const [activeClub, setActiveClub] = useState<"all" | "excelsior" | "padelasdragon">("all");
 
   useEffect(() => {
@@ -176,6 +184,16 @@ export default function BalleJaunePage() {
 
   const records = activeMember === "GALL Christian" ? (christianRecords ?? []) : (lindaRecords ?? []);
   const colors = MEMBER_COLORS[activeMember as keyof typeof MEMBER_COLORS];
+
+  // Auto-select most recent date with sessions (runs once when data arrives)
+  useEffect(() => {
+    if (!records.length) return;
+    const withSessions = records.filter((r) => r.totalSessions > 0);
+    if (withSessions.length === 0) return;
+    const latest = withSessions.reduce((a, b) => a.activityDate > b.activityDate ? a : b);
+    setSelectedDate(latest.activityDate);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMember, christianRecords === undefined, lindaRecords === undefined]);
 
   // Filter by club + selected date
   const dayRecords = records.filter((r) =>
