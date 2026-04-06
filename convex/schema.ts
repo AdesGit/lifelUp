@@ -47,7 +47,9 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_next_due", ["nextDueAt"])
     .index("by_user_due", ["userId", "dueAt"])
-    .index("by_booking_id", ["ballejauneBookingId"]),
+    .index("by_booking_id", ["ballejauneBookingId"])
+    .index("by_gcal_event_id", ["gcalEventId"])
+    .index("by_gtask_id", ["gtaskId"]),
   pushSubscriptions: defineTable({
     userId: v.id("users"),
     endpoint: v.string(),

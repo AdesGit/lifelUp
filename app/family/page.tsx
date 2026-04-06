@@ -1,12 +1,23 @@
 "use client";
 
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth, useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { SignOutButton } from "@/components/SignOutButton";
 import { PushNotificationButton } from "@/components/PushNotificationButton";
 import Link from "next/link";
+
+type TodoCategory = "household" | "family_help" | "training" | "school_work" | "leisure" | "other";
+const CATEGORY_LABELS: Record<TodoCategory, string> = {
+  household: "Tâches ménagères",
+  family_help: "Aide famille",
+  training: "Entraînement",
+  school_work: "École",
+  leisure: "Loisirs",
+  other: "Autre",
+};
 
 function initials(email: string) {
   return email.split("@")[0].slice(0, 2).toUpperCase();
@@ -35,7 +46,13 @@ export default function FamilyPage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const todos = useQuery(api.todos.listAll);
+  const createForUser = useMutation(api.todos.createForUser);
+  const toggleForUser = useMutation(api.todos.toggleForUser);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [newTaskText, setNewTaskText] = useState("");
+  const [newTaskCategory, setNewTaskCategory] = useState<TodoCategory>("other");
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push("/signin");
@@ -185,52 +202,134 @@ export default function FamilyPage() {
               </div>
 
               {/* Selected user's todos */}
-              {selectedUser && (
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-8 h-8 rounded-full ${selectedColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                      {initials(selectedUser.email)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {displayName(selectedUser.todos[0]?.user ?? { email: selectedUser.email })}
-                      </p>
-                      <p className="text-xs text-yellow-500 font-medium">
-                        Lv.{computeLevel(selectedUser.todos[0]?.user?.totalStars ?? 0)} ⭐{selectedUser.todos[0]?.user?.totalStars ?? 0}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-400">
-                      {selectedUser.todos.filter((t) => t.completed).length}/{selectedUser.todos.length} done
-                    </span>
-                  </div>
+              {selectedUser && (() => {
+                const completedCount = selectedUser.todos.filter((t) => t.completed).length;
+                const incompleteCount = selectedUser.todos.filter((t) => !t.completed).length;
+                const visibleTodos = showCompleted
+                  ? selectedUser.todos
+                  : selectedUser.todos.filter((t) => !t.completed);
+                // Find the userId for this user group
+                const targetUserId = selectedUser.todos[0]?.userId ?? null;
 
-                  {selectedUser.todos.length === 0 ? (
-                    <p className="text-xs text-gray-400 pl-8 sm:pl-11">No todos yet</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {selectedUser.todos.map((todo) => (
-                        <li key={todo._id} className="flex items-center gap-3 pl-8 sm:pl-11">
-                          <div className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            todo.completed ? `${selectedColor} border-transparent` : "border-gray-300"
-                          }`}>
-                            {todo.completed && (
-                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
+                async function handleAddTask(e: React.FormEvent) {
+                  e.preventDefault();
+                  const trimmed = newTaskText.trim();
+                  if (!trimmed || !targetUserId) return;
+                  setAdding(true);
+                  try {
+                    await createForUser({
+                      targetUserId: targetUserId as Id<"users">,
+                      text: trimmed,
+                      category: newTaskCategory,
+                    });
+                    setNewTaskText("");
+                    setNewTaskCategory("other");
+                  } finally {
+                    setAdding(false);
+                  }
+                }
+
+                return (
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-3 sm:p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-8 h-8 rounded-full ${selectedColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                        {initials(selectedUser.email)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {displayName(selectedUser.todos[0]?.user ?? { email: selectedUser.email })}
+                        </p>
+                        <p className="text-xs text-yellow-500 font-medium">
+                          Lv.{computeLevel(selectedUser.todos[0]?.user?.totalStars ?? 0)} ⭐{selectedUser.todos[0]?.user?.totalStars ?? 0}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {incompleteCount} à faire · {completedCount} faites
+                      </span>
+                    </div>
+
+                    {/* Add task form */}
+                    {targetUserId && (
+                      <form onSubmit={handleAddTask} className="flex gap-2 mb-4 pl-8 sm:pl-11">
+                        <input
+                          value={newTaskText}
+                          onChange={(e) => setNewTaskText(e.target.value)}
+                          placeholder="Nouvelle tâche…"
+                          className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <select
+                          value={newTaskCategory}
+                          onChange={(e) => setNewTaskCategory(e.target.value as TodoCategory)}
+                          className="text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          {(Object.keys(CATEGORY_LABELS) as TodoCategory[]).map((key) => (
+                            <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="submit"
+                          disabled={!newTaskText.trim() || adding}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          +
+                        </button>
+                      </form>
+                    )}
+
+                    {visibleTodos.length === 0 && incompleteCount === 0 && completedCount === 0 && (
+                      <p className="text-xs text-gray-400 pl-8 sm:pl-11">Aucune tâche</p>
+                    )}
+                    {visibleTodos.length === 0 && incompleteCount === 0 && completedCount > 0 && !showCompleted && (
+                      <p className="text-xs text-gray-400 pl-8 sm:pl-11">Toutes les tâches sont terminées !</p>
+                    )}
+
+                    {visibleTodos.length > 0 && (
+                      <ul className="space-y-2">
+                        {visibleTodos.map((todo) => (
+                          <li
+                            key={todo._id}
+                            className={`flex items-center gap-3 pl-8 sm:pl-11 ${todo.completed ? "opacity-60" : ""}`}
+                          >
+                            <button
+                              onClick={() => toggleForUser({ id: todo._id as Id<"todos"> })}
+                              className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                todo.completed ? `${selectedColor} border-transparent` : "border-gray-300 hover:border-blue-400"
+                              }`}
+                            >
+                              {todo.completed && (
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                            <span className={`text-sm flex-1 ${todo.completed ? "line-through text-gray-400" : "text-gray-700 dark:text-gray-300"}`}>
+                              {todo.text}
+                            </span>
+                            {todo.starValue != null && (
+                              <span className="text-xs text-yellow-500">⭐{todo.starValue}</span>
                             )}
-                          </div>
-                          <span className={`text-sm flex-1 ${todo.completed ? "line-through text-gray-400" : "text-gray-700 dark:text-gray-300"}`}>
-                            {todo.text}
-                          </span>
-                          {todo.starValue != null && (
-                            <span className="text-xs text-yellow-500">⭐{todo.starValue}</span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {/* Show/hide completed toggle */}
+                    {completedCount > 0 && (
+                      <button
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        className="w-full mt-3 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 py-1.5 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <svg className={`w-3.5 h-3.5 transition-transform ${showCompleted ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                        {showCompleted
+                          ? "Masquer les tâches terminées"
+                          : `Afficher ${completedCount} tâche${completedCount > 1 ? "s" : ""} terminée${completedCount > 1 ? "s" : ""}`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>

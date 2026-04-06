@@ -299,6 +299,28 @@ http.route({
   }),
 });
 
+// GET /agent/v1/todos-dupes — count duplicate todos (by gcalEventId / gtaskId)
+http.route({
+  path: "/agent/v1/todos-dupes",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const result = await ctx.runQuery(internal.todos.countDuplicates);
+    return Response.json(result);
+  }),
+});
+
+// POST /agent/v1/todos-dedupeAll — remove duplicate todos, keeping oldest per ID
+http.route({
+  path: "/agent/v1/todos-dedupeAll",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    if (!verifyAgentSecret(req)) return new Response("Unauthorized", { status: 401 });
+    const result = await ctx.runMutation(internal.todos.cleanupDuplicates);
+    return Response.json(result);
+  }),
+});
+
 // POST /agent/v1/agent-run-log — agents log their run stats here
 http.route({
   path: "/agent/v1/agent-run-log",

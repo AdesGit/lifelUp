@@ -235,7 +235,7 @@ export const patchGcalFields = internalMutation({
   },
 });
 
-// Create a todo from a GCal event (GCal → LifeLup direction)
+// Create a todo from a GCal event (GCal → LifeLup direction) — upsert by gcalEventId
 export const createFromGcal = internalMutation({
   args: {
     userId: v.id("users"),
@@ -245,7 +245,21 @@ export const createFromGcal = internalMutation({
     gcalUpdatedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("todos", {
+    // Upsert by gcalEventId to prevent duplicates on repeated sync runs
+    if (args.gcalEventId) {
+      const existing = await ctx.db.query("todos")
+        .withIndex("by_gcal_event_id", (q) => q.eq("gcalEventId", args.gcalEventId))
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          text: args.text,
+          dueAt: args.dueAt,
+          gcalUpdatedAt: args.gcalUpdatedAt,
+        });
+        return existing._id;
+      }
+    }
+    return ctx.db.insert("todos", {
       userId: args.userId,
       text: args.text,
       completed: false,
@@ -280,7 +294,7 @@ export const patchGtaskFields = internalMutation({
   },
 });
 
-// Create a todo from a Google Task (GTasks → LifeLup direction)
+// Create a todo from a Google Task (GTasks → LifeLup direction) — upsert by gtaskId
 export const createFromGtask = internalMutation({
   args: {
     userId: v.id("users"),
@@ -291,7 +305,20 @@ export const createFromGtask = internalMutation({
     gtaskUpdatedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("todos", {
+    // Upsert by gtaskId to prevent duplicates on repeated sync runs
+    const existing = await ctx.db.query("todos")
+      .withIndex("by_gtask_id", (q) => q.eq("gtaskId", args.gtaskId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        text: args.text,
+        dueAt: args.dueAt,
+        gtaskUpdatedAt: args.gtaskUpdatedAt,
+        gtaskListId: args.gtaskListId,
+      });
+      return existing._id;
+    }
+    return ctx.db.insert("todos", {
       userId: args.userId,
       text: args.text,
       completed: false,
@@ -453,5 +480,96 @@ export const deleteTodo = internalMutation({
   args: { id: v.id("todos") },
   handler: async (ctx, { id }) => {
     await ctx.db.delete(id);
+  },
+});
+
+// Mutation: create a todo for any family member (caller must be authenticated)
+export const createForUser = mutation({
+  args: {
+    targetUserId: v.id("users"),
+    text: v.string(),
+    category: v.optional(v.union(
+      v.literal("household"),
+      v.literal("family_help"),
+      v.literal("training"),
+      v.literal("school_work"),
+      v.literal("leisure"),
+      v.literal("other"),
+    )),
+  },
+  handler: async (ctx, { targetUserId, text, category }) => {
+    const callerId = await getAuthUserId(ctx);
+    if (!callerId) throw new Error("Not authenticated");
+    await ctx.db.insert("todos", {
+      userId: targetUserId,
+      text,
+      completed: false,
+      category: category ?? "other",
+      lifelupUpdatedAt: Date.now(),
+    });
+  },
+});
+
+// Internal query: count duplicates by gcalEventId and gtaskId
+export const countDuplicates = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const allTodos = await ctx.db.query("todos").collect();
+    const gcalGroups: Record<string, number> = {};
+    const gtaskGroups: Record<string, number> = {};
+    for (const todo of allTodos) {
+      if (todo.gcalEventId) gcalGroups[todo.gcalEventId] = (gcalGroups[todo.gcalEventId] ?? 0) + 1;
+      if (todo.gtaskId) gtaskGroups[todo.gtaskId] = (gtaskGroups[todo.gtaskId] ?? 0) + 1;
+    }
+    const gcalDupes = Object.values(gcalGroups).filter((c) => c > 1).reduce((s, c) => s + c - 1, 0);
+    const gtaskDupes = Object.values(gtaskGroups).filter((c) => c > 1).reduce((s, c) => s + c - 1, 0);
+    return { gcalDupes, gtaskDupes, total: gcalDupes + gtaskDupes };
+  },
+});
+
+// Internal mutation: delete duplicate todos, keeping oldest per gcalEventId / gtaskId
+export const cleanupDuplicates = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const allTodos = await ctx.db.query("todos").collect();
+    let deleted = 0;
+
+    // Group by gcalEventId
+    const gcalGroups: Record<string, typeof allTodos> = {};
+    for (const todo of allTodos) {
+      if (todo.gcalEventId) {
+        if (!gcalGroups[todo.gcalEventId]) gcalGroups[todo.gcalEventId] = [];
+        gcalGroups[todo.gcalEventId].push(todo);
+      }
+    }
+    for (const group of Object.values(gcalGroups)) {
+      if (group.length > 1) {
+        group.sort((a, b) => a._creationTime - b._creationTime);
+        for (let i = 1; i < group.length; i++) {
+          await ctx.db.delete(group[i]._id);
+          deleted++;
+        }
+      }
+    }
+
+    // Group by gtaskId
+    const gtaskGroups: Record<string, typeof allTodos> = {};
+    for (const todo of allTodos) {
+      if (todo.gtaskId) {
+        if (!gtaskGroups[todo.gtaskId]) gtaskGroups[todo.gtaskId] = [];
+        gtaskGroups[todo.gtaskId].push(todo);
+      }
+    }
+    for (const group of Object.values(gtaskGroups)) {
+      if (group.length > 1) {
+        group.sort((a, b) => a._creationTime - b._creationTime);
+        for (let i = 1; i < group.length; i++) {
+          await ctx.db.delete(group[i]._id);
+          deleted++;
+        }
+      }
+    }
+
+    return { deleted };
   },
 });
