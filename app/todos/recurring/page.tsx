@@ -127,6 +127,10 @@ export default function RecurringTodosPage() {
             Screen Time
           </Link>
           <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/ballejaune" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Padel
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
           <Link href="/agents" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
             Agents
           </Link>

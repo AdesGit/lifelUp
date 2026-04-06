@@ -523,6 +523,60 @@ http.route({
   }),
 });
 
+// ─── BalleJaune daily activity receiver ──────────────────────────────────────
+
+// POST /api/ballejaune-daily-activity — receive padel session data per member
+http.route({
+  path:   "/api/ballejaune-daily-activity",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const secret = request.headers.get("x-lifelup-secret");
+    if (!secret || secret !== process.env.FAMILYLINK_SECRET) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400, headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const required = ["member_login", "club", "extraction_date", "activity_date", "total_sessions", "total_minutes", "sessions"];
+    for (const f of required) {
+      if (body[f] === undefined) {
+        return new Response(JSON.stringify({ error: `Missing field: ${f}` }), {
+          status: 400, headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const result = await ctx.runMutation(internal.ballejaune.upsertBalleJauneActivity, {
+      memberLogin:    body.member_login    as string,
+      club:           body.club           as string,
+      activityDate:   body.activity_date  as string,
+      extractionDate: body.extraction_date as string,
+      totalSessions:  body.total_sessions as number,
+      totalMinutes:   body.total_minutes  as number,
+      sessions:       body.sessions       as Array<{
+        booking_id: string; date: string; time_start: string;
+        duration_minutes: number; court: string;
+        status: "played" | "cancelled" | "confirmed" | "upcoming" | "unknown";
+        partners: string[];
+      }>,
+    });
+
+    return new Response(
+      JSON.stringify({ success: true, id: result.id, action: result.action }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  }),
+});
+
 // ─── Family Link daily activity receiver ─────────────────────────────────────
 
 // POST /api/familylink-daily-activity — receive daily per-child screen-time data

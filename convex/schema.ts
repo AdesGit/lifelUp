@@ -13,7 +13,9 @@ const schema = defineSchema({
     totalStars: v.optional(v.number()),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
-  }).index("email", ["email"]),
+    ballejauneLogin: v.optional(v.string()),  // e.g. "GALL Christian"
+  }).index("email", ["email"])
+    .index("by_ballejaune_login", ["ballejauneLogin"]),
   todos: defineTable({
     userId: v.id("users"),
     text: v.string(),
@@ -40,10 +42,12 @@ const schema = defineSchema({
     gtaskListId: v.optional(v.string()),      // which Google Task list it belongs to
     gtaskUpdatedAt: v.optional(v.number()),   // last known GTask modification time (unix ms)
     lifelupUpdatedAt: v.optional(v.number()), // last time this todo was edited in LifeLup (unix ms)
+    ballejauneBookingId: v.optional(v.string()), // booking_id from BalleJaune (set on auto-created todos)
   })
     .index("by_user", ["userId"])
     .index("by_next_due", ["nextDueAt"])
-    .index("by_user_due", ["userId", "dueAt"]),
+    .index("by_user_due", ["userId", "dueAt"])
+    .index("by_booking_id", ["ballejauneBookingId"]),
   pushSubscriptions: defineTable({
     userId: v.id("users"),
     endpoint: v.string(),
@@ -162,6 +166,33 @@ const schema = defineSchema({
   })
     .index("by_agent", ["agentName"])
     .index("by_run_at", ["runAt"]),
+  ballejaune_activity: defineTable({
+    memberId:       v.optional(v.id("users")),  // null if member not yet linked
+    memberLogin:    v.string(),                 // "GALL Linda"
+    club:           v.string(),                 // "excelsior" | "padelasdragon"
+    activityDate:   v.string(),                 // "YYYY-MM-DD"
+    extractionDate: v.string(),                 // ISO 8601
+    totalSessions:  v.number(),
+    totalMinutes:   v.number(),
+    sessions: v.array(v.object({
+      booking_id:       v.string(),
+      date:             v.string(),
+      time_start:       v.string(),
+      duration_minutes: v.number(),
+      court:            v.string(),
+      status:           v.union(
+        v.literal("played"),
+        v.literal("cancelled"),
+        v.literal("confirmed"),
+        v.literal("upcoming"),
+        v.literal("unknown"),
+      ),
+      partners:         v.array(v.string()),
+    })),
+  })
+    .index("by_member_club_date", ["memberLogin", "club", "activityDate"])
+    .index("by_member_id",        ["memberId"])
+    .index("by_date",             ["activityDate"]),
   daily_activity: defineTable({
     child_id:           v.number(),   // 3 (Keoni) | 4 (Kalea)
     child_name:         v.string(),   // "Keoni" | "Kalea"

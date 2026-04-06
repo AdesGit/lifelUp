@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as agentRuns from "../agentRuns.js";
 import type * as auth from "../auth.js";
+import type * as ballejaune from "../ballejaune.js";
 import type * as coach from "../coach.js";
 import type * as context from "../context.js";
 import type * as familylinkActivity from "../familylinkActivity.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   agentRuns: typeof agentRuns;
   auth: typeof auth;
+  ballejaune: typeof ballejaune;
   coach: typeof coach;
   context: typeof context;
   familylinkActivity: typeof familylinkActivity;
