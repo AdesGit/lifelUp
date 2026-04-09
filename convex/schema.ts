@@ -14,6 +14,7 @@ const schema = defineSchema({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     ballejauneLogin: v.optional(v.string()),  // e.g. "GALL Christian"
+    themeColor: v.optional(v.string()),       // palette id: "blue" | "violet" | ... fallback "blue"
   }).index("email", ["email"])
     .index("by_ballejaune_login", ["ballejauneLogin"]),
   todos: defineTable({

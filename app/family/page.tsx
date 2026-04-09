@@ -34,13 +34,22 @@ function displayName(user: { firstName?: string | null; lastName?: string | null
   return (user.email ?? "").split("@")[0];
 }
 
-const COLORS = [
-  "bg-blue-500",
-  "bg-purple-500",
-  "bg-green-500",
-  "bg-orange-500",
-  "bg-pink-500",
-];
+// Complete Tailwind classes — never build these with template literals (Tailwind 4 purging)
+const THEME_COLORS: Record<string, string> = {
+  blue:   "bg-blue-500",
+  violet: "bg-violet-500",
+  pink:   "bg-pink-500",
+  green:  "bg-green-500",
+  orange: "bg-orange-500",
+  red:    "bg-red-500",
+  cyan:   "bg-cyan-500",
+  yellow: "bg-yellow-500",
+  indigo: "bg-indigo-500",
+};
+
+function getThemeColor(themeColor?: string | null): string {
+  return THEME_COLORS[themeColor ?? ""] ?? "bg-blue-500";
+}
 
 export default function FamilyPage() {
   const { isLoading, isAuthenticated } = useConvexAuth();
@@ -80,8 +89,7 @@ export default function FamilyPage() {
   // Default to first user if none selected
   const effectiveEmail = selectedEmail ?? users[0]?.email ?? null;
   const selectedUser = effectiveEmail ? (byUser[effectiveEmail] ?? null) : null;
-  const selectedIndex = users.findIndex((u) => u.email === effectiveEmail);
-  const selectedColor = selectedIndex >= 0 ? COLORS[selectedIndex % COLORS.length] : COLORS[0];
+  const selectedColor = getThemeColor(selectedUser?.todos[0]?.user?.themeColor);
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -147,6 +155,10 @@ export default function FamilyPage() {
           <Link href="/integrations" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
             Intégrations
           </Link>
+          <span className="text-gray-300 dark:text-gray-600 flex-shrink-0">·</span>
+          <Link href="/profile" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">
+            Profile
+          </Link>
         </nav>
         <div className="flex items-center gap-2 flex-shrink-0">
           <PushNotificationButton />
@@ -174,9 +186,9 @@ export default function FamilyPage() {
             <>
               {/* Tab bar */}
               <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
-                {users.map(({ email, todos: userTodos }, i) => {
+                {users.map(({ email, todos: userTodos }) => {
                   const done = userTodos.filter((t) => t.completed).length;
-                  const color = COLORS[i % COLORS.length];
+                  const color = getThemeColor(userTodos[0]?.user?.themeColor);
                   const userObj = userTodos[0]?.user;
                   const userStars = userObj?.totalStars ?? 0;
                   const userLevel = computeLevel(userStars);

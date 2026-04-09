@@ -23,6 +23,15 @@ export const updateProfile = mutation({
   },
 });
 
+export const updateThemeColor = mutation({
+  args: { themeColor: v.string() },
+  handler: async (ctx, { themeColor }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await ctx.db.patch(userId, { themeColor });
+  },
+});
+
 // Returns all users (for calendar color mapping and family views)
 export const listAll = query({
   args: {},

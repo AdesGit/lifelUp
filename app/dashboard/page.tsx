@@ -101,6 +101,7 @@ export default function DashboardPage() {
     { href: "/todos-board", label: "Todos Board" },
     { href: "/dashboard", label: "Dashboard", active: true },
     { href: "/agents", label: "Agents" }, { href: "/integrations", label: "Intégrations" },
+    { href: "/profile", label: "Profile" },
   ];
 
   return (

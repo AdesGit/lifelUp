@@ -63,6 +63,7 @@ export default function TodosBoardPage() {
     { href: "/todos-board", label: "Todos Board", active: true },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/agents", label: "Agents" }, { href: "/integrations", label: "Intégrations" },
+    { href: "/profile", label: "Profile" },
   ];
 
   return (

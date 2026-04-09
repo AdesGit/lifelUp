@@ -135,6 +135,7 @@ export default function CalendarPage() {
     { href: "/calendar", label: "Calendrier", active: true },
     { href: "/todos-board", label: "Todos Board" }, { href: "/dashboard", label: "Dashboard" },
     { href: "/agents", label: "Agents" }, { href: "/integrations", label: "Intégrations" },
+    { href: "/profile", label: "Profile" },
   ];
 
   return (
